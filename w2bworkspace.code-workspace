@@ -1,0 +1,16 @@
+{
+	"folders": [
+		{
+			"path": "../learning"
+		},
+		{
+			"path": "."
+		},
+		{
+			"path": "../pytorch-original-transformer"
+		}
+	],
+	"settings": {
+		"jupyter.jupyterServerType": "local"
+	}
+}
