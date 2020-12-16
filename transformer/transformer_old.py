@@ -401,3 +401,5 @@ def make_model(src_vocab, tgt_vocab, N=6,
 # Small example model.
 # tmp_model = make_model(10, 10, 2)
 # None
+
+print("Imported Transformer")
