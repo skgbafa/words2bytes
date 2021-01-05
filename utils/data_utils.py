@@ -285,6 +285,23 @@ def get_data_loaders(dataset_path, language_direction, dataset_name, batch_size,
     return train_token_ids_loader, val_token_ids_loader, src_field_processor, trg_field_processor
 
 
+def get_data_loaders_causal(dataset_path, dataset_name=DatasetType.PennTreebank.name, batch_size=32, device="cpu"):
+    dataset = getattr(datasets, dataset_name)  # should not be translation datsets
+    spacy_en = spacy.load('en_core_web_sm')
+
+    def tokenizer(text):
+        return [tok.text for tok in spacy_en.tokenizer(text)]
+
+    field_processor = Field(tokenize=tokenizer, init_token=BOS_TOKEN,
+                            eos_token=EOS_TOKEN, pad_token=PAD_TOKEN, batch_first=True)
+    ts = time.time()
+
+    train_token_ids_loader, val_token_ids_loader = dataset.iters(
+        batch_size=batch_size, root=dataset_path, device=device)
+    print(f'Time it took to prepare the iterator: {time.time() - ts:3f} seconds.')
+
+    return train_token_ids_loader, val_token_ids_loader, field_processor
+
 def get_masks_and_count_tokens_src(src_token_ids_batch, pad_token_id):
     batch_size = src_token_ids_batch.shape[0]
 
