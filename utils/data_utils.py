@@ -10,17 +10,25 @@ from torchtext import datasets
 import spacy
 
 
-from .constants import BOS_TOKEN, EOS_TOKEN, PAD_TOKEN, DATA_DIR_PATH
+from constants import BOS_TOKEN, EOS_TOKEN, PAD_TOKEN, DATA_DIR_PATH
 
 
 class DatasetType(enum.Enum):
     IWSLT = 0,
-    WMT14 = 1
+    WMT14 = 1,
+    PennTreebank = 2,
+    WikiText2 = 3,
+    WikiText103 = 4
 
 
 class LanguageDirection(enum.Enum):
     E2G = 0,
     G2E = 1
+
+
+class LanguageTask(enum.Enum):
+    Translation = 0,
+    CausalLanuageModeling = 1
 
 
 #
@@ -107,6 +115,50 @@ def save_cache(cache_path, dataset):
 #
 # End of caching mechanism utilities
 #
+
+def get_datasets_and_vocab_causal(dataset_path, dataset_name= DatasetType.PennTreebank.name, use_caching_mechanism=False):
+    # load data
+    dataset = getattr(datasets, dataset_name) # should not be translation datsets
+    spacy_en = spacy.load('en_core_web_sm')
+
+    def tokenize_en(text):
+        return [tok.text for tok in spacy_en.tokenizer(text)]
+
+    field_processor = Field(tokenize=tokenize_en, init_token=BOS_TOKEN, eos_token=EOS_TOKEN, pad_token=PAD_TOKEN, batch_first=True)
+
+    # fields = [('src', src_field_processor), ('trg', trg_field_processor)]
+    # MAX_LEN = 100  # filter out examples that have more than MAX_LEN tokens
+    # filter_pred = lambda x: len(x.src) <= MAX_LEN and len(x.trg) <= MAX_LEN
+
+    # tokenize data
+    # create datasets
+    prefix = 'causal_' + dataset_name
+    train_cache_path = os.path.join(dataset_path, f'{prefix}_train_cache.csv')
+    val_cache_path = os.path.join(dataset_path, f'{prefix}_val_cache.csv')
+    test_cache_path = os.path.join(dataset_path, f'{prefix}_test_cache.csv')
+
+    # This simple caching mechanism gave me ~30x speedup on my machine! From ~70s -> ~2.5s!
+    ts = time.time()
+    if not use_caching_mechanism or not (os.path.exists(train_cache_path) and os.path.exists(val_cache_path)):
+        train_dataset, val_dataset, test_dataset = dataset.splits(
+            text_field=field_processor,
+            root=dataset_path
+        )
+
+        # TODO: save to cache
+        # save_cache(train_cache_path, train_dataset)
+        # save_cache(val_cache_path, val_dataset)
+        # save_cache(test_cache_path, test_dataset)
+    else:
+        # TODO: load from cache 
+        print("did not load from cache!")
+        return
+
+    print(f'Time it took to prepare the data: {time.time() - ts:3f} seconds.')
+
+    # src_field_processor.build_vocab(train_dataset.src, min_freq=MIN_FREQ)
+
+    return train_dataset, val_dataset, field_processor
 
 
 def get_datasets_and_vocabs(dataset_path, language_direction, use_iwslt=True, use_caching_mechanism=True):
