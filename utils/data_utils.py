@@ -6,7 +6,7 @@ import enum
 import torch
 from torchtext.data import Dataset, BucketIterator, Field, Example
 from torchtext.data.utils import interleave_keys
-from torchtext import datasets
+from torchtext import datasets, vocab
 import spacy
 
 
@@ -368,7 +368,7 @@ def sample_text_from_loader(src_field_processor, trg_field_processor, token_ids_
         print('*' * 5)
         if sample_src:
             print("Source text:", end="\t")
-            for token_id in token_ids_batch.src[0]:  # print only the first example from the batch
+            for token_id in token_ids_batch.text[0]:  # print only the first example from the batch
                 src_token = src_field_processor.vocab.itos[token_id]
 
                 if src_token == PAD_TOKEN and not show_padded:
@@ -379,7 +379,7 @@ def sample_text_from_loader(src_field_processor, trg_field_processor, token_ids_
 
         if sample_trg:
             print("Target text:", end="\t")
-            for token_id in token_ids_batch.trg[0]:
+            for token_id in token_ids_batch.target[0]:
                 trg_token = trg_field_processor.vocab.itos[token_id]
 
                 if trg_token == PAD_TOKEN and not show_padded:
