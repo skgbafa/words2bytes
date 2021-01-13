@@ -269,7 +269,7 @@ def train():
 
         total_loss += loss.item()
         log_interval = 200
-        if batch % log_interval == 0 and batch > 0:
+        if batch % log_interval == 0 and batch > 0:t
             cur_loss = total_loss / log_interval
             elapsed = time.time() - start_time
             print('| epoch {:3d} | {:5d}/{:5d} batches | '
