@@ -1,30 +1,10 @@
 
 # imports
-from typing import Optional, Any
-from torch import Tensor
-from torch.nn import TransformerEncoder, TransformerEncoderLayer, TransformerDecoderLayer, TransformerDecoder, LayerNorm
-
-import enum
-import io
 import time
 import math
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
-from torch.utils.data import DataLoader
-
-from torchtext import datasets, vocab
-from torchtext.data import Field, BPTTIterator
-from torchtext.utils import download_from_url, extract_archive
-from torchtext.data.utils import get_tokenizer
-from torchtext.vocab import build_vocab_from_iterator
-
-from transformers import AutoTokenizer
-
-import pytorch_lightning as pl
-import matplotlib.pyplot as plt
-import numpy as np 
 
 import wandb
 
@@ -48,7 +28,7 @@ def generateExperiements():
     #
     sweep_parameters = {
         "n_attention_heads": {
-            "values": [2, 3, ]
+            "values": [2, 3 ]
         },
         "n_decoder_layers": {
             "values": [2, 4, 6]
@@ -77,99 +57,6 @@ def generateExperiements():
 
 
 
-# training loop
-def train(model, config, epoch, artifacts):
-    max_seq_len = extract_config(config, "max_seq_len")
-    
-    model.train() # Turn on the train mode
-    total_loss = 0.
-    start_time = time.time()
-    src_mask = model.generate_square_subsequent_mask(max_seq_len).to(device)
-    for batch, i in enumerate(range(0, train_data_batches.size(0) - 1, max_seq_len)):
-        data, targets = get_batch(max_seq_len, train_data_batches, i)
-        optimizer.zero_grad()
-        if data.size(0) != max_seq_len:
-            src_mask = model.generate_square_subsequent_mask(data.size(0)).to(device)
-        # print(data.dtype)
-        # output = model(data, targets)
-        reshape_seq_len = min(data.size(0), max_seq_len)
-        targets_flat = targets.reshape(reshape_seq_len, targets.size(0)//reshape_seq_len)
-        output = model(data, src_mask)
-        # output = model(data, targets_flat, src_mask)
-        # output = model(data, targets_flat, src_mask, src_mask)
-
-        output.view(-1, ntokens)
-        loss = criterion(output.view(-1, ntokens), targets)
-        loss.backward()
-        torch.nn.utils.clip_grad_norm_(model.parameters(), 0.5)
-        optimizer.step()
-        
-        # update_artifact_loss(artifacts, 'training', 'CrossEntropyLoss', epoch, batch, loss.item())
-        wandb.log({
-            # "elapsed_time": start_time - time.time(),
-            "epoch": epoch,
-            "batch": batch,
-            "batch_loss": loss.item(),
-            # "current_loss": cur_loss,
-            "ppl": math.exp(loss.item()),
-            "learning_rate": scheduler.get_lr()[0],
-        })
-
-        total_loss += loss.item()
-        log_interval = 200
-        cur_loss = total_loss / log_interval
-        if batch % log_interval == 0 and batch > 0:
-            cur_loss = total_loss / log_interval
-            elapsed = time.time() - start_time
-            print('| epoch {:3d} | {:5d}/{:5d} batches | '
-                  'lr {:02.2f} | ms/batch {:5.2f} | '
-                  'loss {:5.2f} | ppl {:8.2f}'.format(
-                    epoch, batch, len(train_data_batches) // max_seq_len, scheduler.get_lr()[0],
-                    elapsed * 1000 / log_interval,
-                    cur_loss, math.exp(cur_loss)))
-            total_loss = 0
-            start_time = time.time()
-
-# evaluation
-
-
-def evaluate(model, data_source, config):
-    max_seq_len = extract_config(config, "max_seq_len")
-
-    model.eval()  # Turn on the evaluation mode
-    total_loss = 0.
-    src_mask = model.generate_square_subsequent_mask(max_seq_len).to(device)
-    with torch.no_grad():
-        for i in range(0, data_source.size(0) - 1, max_seq_len):
-            data, targets = get_batch(max_seq_len, data_source, i)
-
-            # print(data)
-            # print(targets)
-            if data.size(0) != max_seq_len:
-                src_mask = model.generate_square_subsequent_mask(
-                    data.size(0)).to(device)
-            # output = model(data, targets)
-            reshape_seq_len = min(data.size(0), max_seq_len)
-            targets_flat = targets.reshape(
-                reshape_seq_len, targets.size(0)//reshape_seq_len)
-            output = model(data, src_mask)
-            # output = model(data, targets_flat, src_mask, src_mask)
-            # output = model(data, targets_flat, src_mask, src_mask)
-
-            output_flat = output.view(-1, ntokens)
-            loss = criterion(output_flat, targets)
-            # update_artifact_loss(artifacts, 'training', 'CrossEntropyLoss', epoch, batch, loss.item())
-            total_loss += len(data) * loss.item()
-
-            wandb.log({
-                # "elapsed_time": start_time - time.time(),
-                # "epoch": epoch,
-                "batch": i,
-                "batch_loss": loss.item(),
-                # "current_loss": cur_loss,
-                "ppl": math.exp(loss.item()),
-            })
-    return total_loss / (len(data_source) - 1)
 
 # sweep function
 
