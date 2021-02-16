@@ -30,28 +30,18 @@ def train(model, batches, config, runtime, epoch, artifacts):
         if data.size(0) != max_seq_len:
             src_mask = model.generate_square_subsequent_mask(
                 data.size(0)).to(device)
-        # print(data.dtype)
-        # output = model(data, targets)
-        reshape_seq_len = min(data.size(0), max_seq_len)
-        targets_flat = targets.reshape(
-            reshape_seq_len, targets.size(0)//reshape_seq_len)
-        output = model(data, src_mask)
-        # output = model(data, targets_flat, src_mask)
-        # output = model(data, targets_flat, src_mask, src_mask)
 
-        output.view(-1, ntokens)
+        output = model(data, src_mask)
+
         loss = criterion(output.view(-1, ntokens), targets)
         loss.backward()
         torch.nn.utils.clip_grad_norm_(model.parameters(), 0.5)
         optimizer.step()
 
-        # update_artifact_loss(artifacts, 'training', 'CrossEntropyLoss', epoch, batch, loss.item())
         wandb.log({
-            # "elapsed_time": start_time - time.time(),
             "epoch": epoch,
             "batch": batch,
             "batch_loss": loss.item(),
-            # "current_loss": cur_loss,
             "ppl": math.exp(loss.item()),
             "learning_rate": scheduler.get_lr()[0],
         })
@@ -90,30 +80,19 @@ def evaluate(model, data_source, config, runtime):
         for i in range(0, data_source.size(0) - 1, max_seq_len):
             data, targets = get_batch(max_seq_len, data_source, i)
 
-            # print(data)
-            # print(targets)
             if data.size(0) != max_seq_len:
                 src_mask = model.generate_square_subsequent_mask(
                     data.size(0)).to(device)
-            # output = model(data, targets)
-            reshape_seq_len = min(data.size(0), max_seq_len)
-            targets_flat = targets.reshape(
-                reshape_seq_len, targets.size(0)//reshape_seq_len)
+
             output = model(data, src_mask)
-            # output = model(data, targets_flat, src_mask, src_mask)
-            # output = model(data, targets_flat, src_mask, src_mask)
 
             output_flat = output.view(-1, ntokens)
             loss = criterion(output_flat, targets)
-            # update_artifact_loss(artifacts, 'training', 'CrossEntropyLoss', epoch, batch, loss.item())
             total_loss += len(data) * loss.item()
 
             wandb.log({
-                # "elapsed_time": start_time - time.time(),
-                # "epoch": epoch,
                 "batch": i,
                 "batch_loss": loss.item(),
-                # "current_loss": cur_loss,
                 "ppl": math.exp(loss.item()),
             })
     return total_loss / (len(data_source) - 1)
