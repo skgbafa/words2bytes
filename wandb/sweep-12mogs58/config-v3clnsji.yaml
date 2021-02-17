@@ -1,0 +1,12 @@
+wandb_version: 1
+
+dataset:
+  value: WikiText2
+n_attention_heads:
+  value: 2
+n_decoder_layers:
+  value: 2
+n_epochs:
+  value: 3
+segmentation:
+  value: Word
