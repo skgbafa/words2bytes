@@ -19,3 +19,8 @@ class Segmentation(enum.Enum):
     BPE = 3
     BBPE = 4
     BYTE = 5
+
+
+# global variables
+WANDB_ENTITY = "skgbafa"
+# WANDB_ENTITY = "openai-scholars"

@@ -36,8 +36,8 @@ default_config = {
 
 # experiment generation
 def generateExperiements():
-    # WANDB_ENTITY = "skgbafa"
-    WANDB_ENTITY = "openai-scholars"
+    WANDB_ENTITY = "skgbafa"
+    # WANDB_ENTITY = "openai-scholars"
 
     # experiment_datasets = [ Dataset.PennTreebank.name, Dataset.WikiText2.name, Dataset.WikiText103.name ]
     experiment_datasets = [ Dataset.WikiText2.name ]
@@ -72,8 +72,8 @@ def generateExperiements():
     return sweep_id
 
 # sweep function
-def train_and_eval():
-    run = wandb.init(config=default_config)
+def train_and_eval(config=default_config, entity=WANDB_ENTITY):
+    run = wandb.init(config=config, entity=entity)
     config = run.config
 
     # setup data
