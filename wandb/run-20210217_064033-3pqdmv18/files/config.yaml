@@ -1,0 +1,63 @@
+wandb_version: 1
+
+_wandb:
+  desc: null
+  value:
+    cli_version: 0.10.15
+    framework: huggingface
+    huggingface_version: 4.2.2
+    is_jupyter_run: false
+    is_kaggle_kernel: false
+    python_version: 3.8.3
+    t:
+      1:
+      - 1
+      - 11
+      2:
+      - 1
+      - 11
+      4: 3.8.3
+      5: 0.10.15
+      6: 4.2.2
+batch_size:
+  desc: null
+  value: 16
+dataset:
+  desc: null
+  value: WikiText2
+dropout:
+  desc: null
+  value: 0.1
+embedding_dimension:
+  desc: null
+  value: 768
+eval_batch_size:
+  desc: null
+  value: 8
+ff_dimension:
+  desc: null
+  value: 3072
+learning_rate:
+  desc: null
+  value: 5.0
+loss_criterion:
+  desc: null
+  value: CrossEntropyLoss
+max_seq_len:
+  desc: null
+  value: 512
+n_attention_heads:
+  desc: null
+  value: 12
+n_decoder_layers:
+  desc: null
+  value: 12
+n_encoder_layers:
+  desc: null
+  value: 0
+n_epochs:
+  desc: null
+  value: 6
+segmentation:
+  desc: null
+  value: Word
