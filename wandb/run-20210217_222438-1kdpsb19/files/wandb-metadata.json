@@ -1,0 +1,24 @@
+{
+    "os": "Linux-5.4.0-1039-azure-x86_64-with-glibc2.10",
+    "python": "3.8.3",
+    "heartbeatAt": "2021-02-17T22:24:38.910486",
+    "startedAt": "2021-02-17T22:24:38.183210",
+    "docker": null,
+    "gpu": "Tesla K80",
+    "gpu_count": 1,
+    "cpu_count": 6,
+    "cuda": null,
+    "args": [],
+    "state": "running",
+    "codePath": "word_segmentation.py",
+    "program": "word_segmentation.py",
+    "git": {
+        "remote": "https://github.com/skgbafa/words2bytes",
+        "commit": "7ceadbe1d80f80ae2e9c5153564ff13e13a736a4"
+    },
+    "email": "skgbafa@gmail.com",
+    "root": "/data/github/words2bytes",
+    "host": "zoro",
+    "username": "gbafa",
+    "executable": "/home/gbafa/miniconda3/envs/transformer/bin/python"
+}
