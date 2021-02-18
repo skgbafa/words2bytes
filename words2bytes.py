@@ -78,8 +78,8 @@ def train_and_eval(config=default_config, entity=WANDB_ENTITY):
 
     # setup data
     # extract config vars
-    embedding_dimension, n_attention_heads, n_encoder_layers, n_decoder_layers, ff_dimension, dropout, batch_size, eval_batch_size, learning_rate = extract_config(
-        config, "embedding_dimension", "n_attention_heads", "n_encoder_layers", "n_decoder_layers", "ff_dimension", "dropout", "batch_size", "eval_batch_size", "learning_rate")
+    embedding_dimension, n_attention_heads, n_encoder_layers, n_decoder_layers, ff_dimension, dropout, batch_size, eval_batch_size, learning_rate, n_epochs = extract_config(
+        config, "embedding_dimension", "n_attention_heads", "n_encoder_layers", "n_decoder_layers", "ff_dimension", "dropout", "batch_size", "eval_batch_size", "learning_rate", "n_epochs")
 
     # configure device
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -114,12 +114,11 @@ def train_and_eval(config=default_config, entity=WANDB_ENTITY):
 
     # train loop
     best_val_loss = float("inf")
-    epochs = 3  # The number of epochs
     best_model = None
     artifacts = initalize_artifacts(
         config, train_data_batches, val_data_batches)
 
-    for epoch in range(1, epochs + 1):
+    for epoch in range(1, n_epochs + 1):
         epoch_start_time = time.time()
 
         train(model, train_data_batches, config, runtime, epoch, artifacts)
