@@ -42,10 +42,10 @@ class CustomTransformerDecoderLayer(nn.Module):
         self.linear2 = nn.Linear(dim_feedforward, d_model)
 
         self.norm1 = LayerNorm(d_model)
-        self.norm2 = LayerNorm(d_model)  # skip
+        # self.norm2 = LayerNorm(d_model)  # skip
         self.norm3 = LayerNorm(d_model)
         self.dropout1 = nn.Dropout(dropout)
-        self.dropout2 = nn.Dropout(dropout)  # skip
+        # self.dropout2 = nn.Dropout(dropout)  # skip
         self.dropout3 = nn.Dropout(dropout)
 
         self.activation = _get_activation_fn(activation)

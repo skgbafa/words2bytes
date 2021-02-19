@@ -30,14 +30,17 @@ default_config = {
     "eval_batch_size": 10,
     "dropout": 0.2,
     "n_epochs": 3,
-    "learning_rate": 5.0,
+    "learning_rate": 0.0001,
+    "adam_b1": 0.9,
+    "adam_b2": 0.999,
+    "adam_l2_weightdecay": 0.01,
     "loss_criterion": "CrossEntropyLoss"
 }
 
 # experiment generation
 def generateExperiements():
-    WANDB_ENTITY = "skgbafa"
-    # WANDB_ENTITY = "openai-scholars"
+    # WANDB_ENTITY = "skgbafa"
+    WANDB_ENTITY = "openai-scholars"
 
     # experiment_datasets = [ Dataset.PennTreebank.name, Dataset.WikiText2.name, Dataset.WikiText103.name ]
     experiment_datasets = [ Dataset.WikiText2.name ]
@@ -78,8 +81,8 @@ def train_and_eval(config=default_config, entity=WANDB_ENTITY):
 
     # setup data
     # extract config vars
-    embedding_dimension, n_attention_heads, n_encoder_layers, n_decoder_layers, ff_dimension, dropout, batch_size, eval_batch_size, learning_rate, n_epochs = extract_config(
-        config, "embedding_dimension", "n_attention_heads", "n_encoder_layers", "n_decoder_layers", "ff_dimension", "dropout", "batch_size", "eval_batch_size", "learning_rate", "n_epochs")
+    embedding_dimension, n_attention_heads, n_encoder_layers, n_decoder_layers, ff_dimension, dropout, batch_size, eval_batch_size, learning_rate, n_epochs, adam_b1, adam_b2, adam_l2_weightdecay = extract_config(
+        config, "embedding_dimension", "n_attention_heads", "n_encoder_layers", "n_decoder_layers", "ff_dimension", "dropout", "batch_size", "eval_batch_size", "learning_rate", "n_epochs", "adam_b1", "adam_b2", "adam_l2_weightdecay")
 
     # configure device
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -100,7 +103,8 @@ def train_and_eval(config=default_config, entity=WANDB_ENTITY):
 
     # hyperparams
     criterion = nn.CrossEntropyLoss()
-    optimizer = torch.optim.SGD(model.parameters(), lr=learning_rate)
+    optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, betas=(
+        adam_b1, adam_b2), weight_decay=adam_l2_weightdecay)
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, 1.0, gamma=0.95)
 
     # runtime vars

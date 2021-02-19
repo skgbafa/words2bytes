@@ -14,7 +14,10 @@ config = {
     "eval_batch_size": 10,
     "dropout": 0.2,
     "n_epochs": 3,
-    "learning_rate": 5.0,
+    "learning_rate": 0.0001,
+    "adam_b1": 0.9,
+    "adam_b2": 0.999,
+    "adam_l2_weightdecay": 0.01,
     "loss_criterion": "CrossEntropyLoss"
 }
 
@@ -33,7 +36,10 @@ benchmark_config_1 = {
     "batch_size": 8,
     "eval_batch_size": 8,
     "n_epochs": 50,
-    "learning_rate": 5.0,
+    "learning_rate": 0.0001,
+    "adam_b1": 0.9,
+    "adam_b2": 0.999,
+    "adam_l2_weightdecay": 0.01,
     "loss_criterion": "CrossEntropyLoss"
 }
 
