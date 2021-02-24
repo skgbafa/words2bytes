@@ -91,7 +91,7 @@ def train_and_eval(config=default_config, entity=WANDB_ENTITY):
     # load training data
     train_data, val_data, test_data, vocab = load_data(config)
     ntokens = len(vocab.stoi)
-
+    print("Number of tokens", ntokens)
     # batch data
     train_data_batches = batchify(train_data, batch_size, device)
     val_data_batches = batchify(val_data, eval_batch_size, device)

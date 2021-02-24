@@ -1,0 +1,72 @@
+wandb_version: 1
+
+_wandb:
+  desc: null
+  value:
+    cli_version: 0.10.15
+    framework: huggingface
+    huggingface_version: 4.2.2
+    is_jupyter_run: false
+    is_kaggle_kernel: false
+    python_version: 3.8.3
+    t:
+      1:
+      - 1
+      - 11
+      2:
+      - 1
+      - 11
+      4: 3.8.3
+      5: 0.10.15
+      6: 4.2.2
+adam_b1:
+  desc: null
+  value: 0.9
+adam_b2:
+  desc: null
+  value: 0.999
+adam_l2_weightdecay:
+  desc: null
+  value: 0.01
+batch_size:
+  desc: null
+  value: 8
+dataset:
+  desc: null
+  value: PennTreebank
+dropout:
+  desc: null
+  value: 0.1
+embedding_dimension:
+  desc: null
+  value: 768
+eval_batch_size:
+  desc: null
+  value: 8
+ff_dimension:
+  desc: null
+  value: 3072
+learning_rate:
+  desc: null
+  value: 0.0001
+loss_criterion:
+  desc: null
+  value: CrossEntropyLoss
+max_seq_len:
+  desc: null
+  value: 64
+n_attention_heads:
+  desc: null
+  value: 12
+n_decoder_layers:
+  desc: null
+  value: 12
+n_encoder_layers:
+  desc: null
+  value: 0
+n_epochs:
+  desc: null
+  value: 50
+segmentation:
+  desc: null
+  value: Word
