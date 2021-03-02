@@ -13,6 +13,7 @@ from typing import Optional, Any
 import pytorch_lightning as pl
 
 from utils import extract_config
+from constants import *
 
 
 class PositionalEncoding(nn.Module):
@@ -76,11 +77,6 @@ class CustomTransformerDecoderLayer(nn.Module):
         tgt = self.norm3(tgt)
         return tgt
 
-
-def _get_clones(module, N):
-    return ModuleList([copy.deepcopy(module) for i in range(N)])
-
-
 def _get_activation_fn(activation):
     if activation == "relu":
         return F.relu
@@ -95,7 +91,7 @@ def _get_activation_fn(activation):
 # class Transformer(pl.LightningModule):
 
 
-class DecoderOnlyTransformer(nn.Module):
+class DecoderOnlyTransformer(pl.LightningModule):
     def __init__(self, config, ntokens, d_model=512, nhead=8, num_encoder_layers=0,
                  num_decoder_layers=6, dim_feedforward=2048, dropout=0.1,
                  activation="relu", custom_encoder=None, custom_decoder=None):
@@ -122,6 +118,7 @@ class DecoderOnlyTransformer(nn.Module):
         # training setup
         self.criterion = nn.CrossEntropyLoss()
         self.ntokens = ntokens;
+        self.wandb_run = wandb.init(config=config, entity=WANDB_ENTITY)
 
         self._reset_parameters()
 
@@ -165,6 +162,8 @@ class DecoderOnlyTransformer(nn.Module):
     
     def training_step(self, batch, batch_idx):
         data, targets = batch
+        print("data,targets in training_step")
+        print(data, targets)
         src_mask = self.generate_square_subsequent_mask(data.size(0))
         output = self.model(data, src_mask)
         loss = self.criterion(output.view(-1, self.ntokens), targets)
@@ -180,7 +179,9 @@ class DecoderOnlyTransformer(nn.Module):
 
         return loss
 
-    def validation_step(self, batch):
+    def validation_step(self, batch, batch_idx):
+        print("validation_step batch_idx", batch_idx)
+        print("validation_step batch", batch)
         data, targets = batch
         src_mask = self.generate_square_subsequent_mask(data.size(0))
         output = self.model(data, src_mask)
