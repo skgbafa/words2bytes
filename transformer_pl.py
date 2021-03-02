@@ -162,11 +162,10 @@ class DecoderOnlyTransformer(pl.LightningModule):
     
     def training_step(self, batch, batch_idx):
         data, targets = batch
-        print("data,targets in training_step")
-        print(data, targets)
         src_mask = self.generate_square_subsequent_mask(data.size(0))
-        output = self.model(data, src_mask)
-        loss = self.criterion(output.view(-1, self.ntokens), targets)
+        output = self(data, src_mask)
+        output_flat = output.view(-1, self.ntokens)
+        loss = self.criterion(output_flat, targets)
 
         # wandb logging
         wandb.log({
@@ -180,11 +179,9 @@ class DecoderOnlyTransformer(pl.LightningModule):
         return loss
 
     def validation_step(self, batch, batch_idx):
-        print("validation_step batch_idx", batch_idx)
-        print("validation_step batch", batch)
         data, targets = batch
         src_mask = self.generate_square_subsequent_mask(data.size(0))
-        output = self.model(data, src_mask)
+        output = self(data, src_mask)
         output_flat = output.view(-1, self.ntokens)
         loss = self.criterion(output_flat, targets)
 

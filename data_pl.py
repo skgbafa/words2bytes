@@ -52,7 +52,7 @@ def load_data_word(config):
     ts = time.time()
 
     # get dataset
-    dataset, max_seq_len = extract_config(config, "dataset", "max_seq_len")
+    dataset, batch_size, max_seq_len = extract_config(config, "dataset", "batch_size", "max_seq_len")
     dataset = getattr(datasets, dataset)
     print(f"Fetched Data ({time.time() - ts:3f}s)")
 
@@ -76,7 +76,14 @@ def load_data_word(config):
         raw_text_iter = tt_dataset_split[0].text
         data = [torch.tensor([vocab[token] for token in tokenizer(item)],
                                 dtype=torch.long) for item in raw_text_iter]
-        return torch.cat(tuple(filter(lambda t: t.numel() > 0, data)))
+        data = torch.cat(tuple(filter(lambda t: t.numel() > 0, data)))
+        # Divide the dataset into bsz parts.
+        nbatch = data.size(0) // batch_size
+        # Trim off any extra elements that wouldn't cleanly fit (remainders).
+        data = data.narrow(0, 0, nbatch * batch_size)
+        # Evenly divide the data across the batch_size batches.
+        data = data.view(batch_size, -1).t().contiguous()
+        return data
 
     # setup dataloaders
     train_dataloader = TextDataloader(data_prep(train_dataset), max_seq_len)
