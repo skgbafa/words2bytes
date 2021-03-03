@@ -61,7 +61,7 @@ class CustomTransformerDecoderLayer(nn.Module):
             state['activation'] = F.relu
         super(CustomTransformerDecoderLayer, self).__setstate__(state)
 
-    def forward(self, tgt: Tensor, memory: Tensor, tgt_mask: Optional[Tensor] = None, memory_mask: Optional[Tensor] = None,
+    def forward(self, tgt: Tensor, memory: Tensor= None, tgt_mask: Optional[Tensor] = None, memory_mask: Optional[Tensor] = None,
                 tgt_key_padding_mask: Optional[Tensor] = None, memory_key_padding_mask: Optional[Tensor] = None) -> Tensor:
 
         tgt2 = self.self_attn(tgt, tgt, tgt, attn_mask=tgt_mask,
@@ -92,43 +92,48 @@ def _get_activation_fn(activation):
 
 
 class DecoderOnlyTransformer(pl.LightningModule):
-    def __init__(self, config, ntokens, d_model=512, nhead=8, num_encoder_layers=0,
-                 num_decoder_layers=6, dim_feedforward=2048, dropout=0.1,
-                 activation="relu", custom_encoder=None, custom_decoder=None):
+    def __init__(self, config, ntokens, activation="relu"):
         super(DecoderOnlyTransformer, self).__init__()
+        
         # model vars
         self.config = config
-        self.d_model = d_model
-        self.nhead = nhead
+        self.extract_config()
+        self.ntokens = ntokens
 
         # decoder setup
         decoder_layer = CustomTransformerDecoderLayer(
-            d_model, nhead, dim_feedforward, dropout, activation)
-        decoder_norm = LayerNorm(d_model)
-        self.decoder = TransformerDecoder(
-            decoder_layer, num_decoder_layers, decoder_norm)
+            self.d_model, self.n_heads, self.ff_dimension, self.dropout, activation)
+        decoder_norm = LayerNorm(self.d_model)
+        self.decoder = TransformerDecoder(decoder_layer, self.n_decoder_layers, decoder_norm)
 
         # embedding setup
-        self.pos_encoder = PositionalEncoding(d_model, dropout)
-        self.to_embedding = nn.Embedding(ntokens, d_model)
+        self.pos_encoder = PositionalEncoding(self.d_model, self.dropout)
+        self.to_embedding = nn.Embedding(ntokens, self.d_model)
 
         # output setup
-        self.linear = nn.Linear(d_model, ntokens)
+        self.linear = nn.Linear(self.d_model, ntokens)
 
         # training setup
         self.criterion = nn.CrossEntropyLoss()
-        self.ntokens = ntokens;
         self.wandb_run = wandb.init(config=config, entity=WANDB_ENTITY)
 
         self._reset_parameters()
 
-    def training_init(self):
-        learning_rate = extract_config( self.config, "learning_rate" )
+    def extract_config(self):
+        embedding_dimension, n_attention_heads, n_decoder_layers, ff_dimension, dropout, learning_rate, adam_b1, adam_b2, adam_l2_weightdecay = extract_config(
+            self.config, "embedding_dimension", "n_attention_heads", "n_decoder_layers", "ff_dimension", "dropout", "learning_rate", "adam_b1", "adam_b2", "adam_l2_weightdecay")
 
-        pass
+        self.d_model = embedding_dimension
+        self.n_heads = n_attention_heads
+        self.n_decoder_layers = n_decoder_layers
+        self.ff_dimension = ff_dimension
+        self.dropout = dropout
+        self.learning_rate = learning_rate
+        self.adam_b1 = adam_b1
+        self.adam_b2 = adam_b2
+        self.adam_l2_weightdecay = adam_l2_weightdecay
 
-    def forward(self, tgt, tgt_mask=None, memory_mask=None,
-                tgt_key_padding_mask=None, memory_key_padding_mask=None):
+    def forward(self, tgt, tgt_mask=None, tgt_key_padding_mask=None):
 
         # convert input/targets to embeddings
         tgt = self.to_embedding(tgt) * math.sqrt(self.d_model)
@@ -144,13 +149,13 @@ class DecoderOnlyTransformer(pl.LightningModule):
 
         # decoder pass
         output = self.decoder(tgt, memory=None, tgt_mask=tgt_mask,
-                              tgt_key_padding_mask=tgt_key_padding_mask,
-                              memory_key_padding_mask=memory_key_padding_mask)
+                              tgt_key_padding_mask=tgt_key_padding_mask)
         # return after linear layer
         return self.linear(output)
 
     def generate_square_subsequent_mask(self, sz):
-        mask = (torch.triu(torch.ones(sz, sz)) == 1).transpose(0, 1)
+        mask = (torch.triu(torch.ones(sz, sz, device=self.device))
+                == 1).transpose(0, 1)
         mask = mask.float().masked_fill(mask == 0, float(
             '-inf')).masked_fill(mask == 1, float(0.0))
         return mask
@@ -189,24 +194,21 @@ class DecoderOnlyTransformer(pl.LightningModule):
         return loss
 
     def configure_optimizers(self):
-        learning_rate, adam_b1, adam_b2, adam_l2_weightdecay = extract_config(
-            self.config, "learning_rate", "adam_b1", "adam_b2", "adam_l2_weightdecay")
-
-        optimizer = torch.optim.Adam(self.parameters(), lr=learning_rate, betas=(
-            adam_b1, adam_b2), weight_decay=adam_l2_weightdecay)
+        optimizer = torch.optim.Adam(self.parameters(), lr=self.learning_rate, betas=(
+            self.adam_b1, self.adam_b2), weight_decay=self.adam_l2_weightdecay)
         scheduler = torch.optim.lr_scheduler.StepLR(optimizer, 1.0, gamma=0.95)
 
         return [optimizer], [scheduler]
-        # return {
-        #     "optimizer": optimizer,
-        #     "lr_scheduler": self.scheduler
-        # }
 
+def logTensor(tensor, note: None):
+    try:
+        print(note, tensor.shape, tensor.get_device())
+    except:
+        print(note, tensor.shape)
 
 
 if __name__ == "__main__":
     # instantiate for testing
-    # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     from data_pl import load_data
     from constants import *
 
@@ -234,5 +236,5 @@ if __name__ == "__main__":
     ntokens = len(vocab.stoi)
 
     model = DecoderOnlyTransformer(config, ntokens)
-    trainer = pl.Trainer(gpus=2, accelerator="dp")
+    trainer = pl.Trainer(gpus=2, accelerator="ddp")
     trainer.fit(model, train_loader, val_loader)

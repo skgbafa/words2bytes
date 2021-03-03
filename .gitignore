@@ -1,5 +1,6 @@
 .data
 wandb
+lightning_logs
 
 ## Boilerplate
 # Byte-compiled / optimized / DLL files
