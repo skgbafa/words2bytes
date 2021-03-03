@@ -48,10 +48,8 @@ class CustomTransformerDecoderLayer(nn.Module):
         self.linear2 = nn.Linear(dim_feedforward, d_model)
 
         self.norm1 = LayerNorm(d_model)
-        # self.norm2 = LayerNorm(d_model)  # skip
         self.norm3 = LayerNorm(d_model)
         self.dropout1 = nn.Dropout(dropout)
-        # self.dropout2 = nn.Dropout(dropout)  # skip
         self.dropout3 = nn.Dropout(dropout)
 
         self.activation = _get_activation_fn(activation)
@@ -68,10 +66,7 @@ class CustomTransformerDecoderLayer(nn.Module):
                               key_padding_mask=tgt_key_padding_mask)[0]
         tgt = tgt + self.dropout1(tgt2)
         tgt = self.norm1(tgt)
-        # tgt2 = self.multihead_attn(tgt, memory, memory, attn_mask=memory_mask,
-        #                            key_padding_mask=memory_key_padding_mask)[0]
-        # tgt = tgt + self.dropout2(tgt2)
-        # tgt = self.norm2(tgt)
+
         tgt2 = self.linear2(self.dropout(self.activation(self.linear1(tgt))))
         tgt = tgt + self.dropout3(tgt2)
         tgt = self.norm3(tgt)
@@ -174,11 +169,9 @@ class DecoderOnlyTransformer(pl.LightningModule):
 
         # wandb logging
         wandb.log({
-            # "epoch": epoch,
             "batch": batch_idx,
             "batch_loss": loss.item(),
             "ppl": math.exp(loss.item()),
-            # "learning_rate": self.scheduler.get_lr()[0],
         })
 
         return loss
