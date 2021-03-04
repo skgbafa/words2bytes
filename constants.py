@@ -22,5 +22,5 @@ class Segmentation(enum.Enum):
 
 
 # global variables
-WANDB_ENTITY = "skgbafa"
-# WANDB_ENTITY = "openai-scholars"
+# WANDB_ENTITY = "skgbafa"
+WANDB_ENTITY = "openai-scholars"

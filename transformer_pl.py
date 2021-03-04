@@ -229,5 +229,5 @@ if __name__ == "__main__":
     ntokens = len(vocab.stoi)
 
     model = DecoderOnlyTransformer(config, ntokens)
-    trainer = pl.Trainer(gpus=2, accelerator="ddp")
+    trainer = pl.Trainer(gpus=4, accelerator="ddp")
     trainer.fit(model, train_loader, val_loader)

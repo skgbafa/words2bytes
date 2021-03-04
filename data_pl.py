@@ -11,14 +11,14 @@ from transformers import AutoTokenizer
 
 from utils import extract_config
 from constants import *
-
-import lineflow.datasets as lfds
+from utils import *
 
 
 class TextDataloader:
     def __init__(self, dataset, max_seq_len):
         self.max_seq_len = max_seq_len
         self.dataset = dataset
+        print(dataset.shape)
         self.dataset_len = len(dataset)
 
     def __iter__(self):
@@ -29,7 +29,8 @@ class TextDataloader:
         i = self.index
         seq_len = min(self.max_seq_len, self.dataset_len - 1 - i)
         data = self.dataset[i:i+seq_len]
-        target = self.dataset[i+1:i+1+seq_len].reshape(-1)
+        target = self.dataset[i:i+1+seq_len].reshape(-1)
+        target = target[1: len(target) - data.size(1) + 1]  # adjust targets
         self.index += 1
         return data, target
 
@@ -115,4 +116,14 @@ if __name__ == "__main__":
         "loss_criterion": "CrossEntropyLoss"
     }
 
-    load_data_word(config)
+    train_dataloader, val_dataloader, test_dataloader, vocab = load_data(config)
+    # print(vocab.stoi)
+    
+    for batch in train_dataloader:
+        data, targets = batch
+        print("data", data.shape)
+        print("targets", targets.shape)
+        break
+
+    print(emb_to_string(data[0], vocab))
+    print(emb_to_string(targets[0:20], vocab))
