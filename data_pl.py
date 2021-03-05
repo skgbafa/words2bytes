@@ -1,4 +1,5 @@
 import time
+import os
 
 import torch
 from torch.utils.data import DataLoader
@@ -8,6 +9,14 @@ from torchtext.data import Field
 from torchtext.data.utils import get_tokenizer
 
 from transformers import AutoTokenizer
+
+from transformers import GPT2TokenizerFast
+from tokenizers import ByteLevelBPETokenizer
+
+from tokenizers import Tokenizer
+from tokenizers.models import BPE
+from tokenizers.pre_tokenizers import Whitespace
+from tokenizers.trainers import BpeTrainer
 
 from utils import extract_config
 from constants import *
@@ -40,8 +49,8 @@ def load_data(config):
 
     if segmentation == Segmentation.Word.name:
         return load_data_word(config)
-    # if segmentation == Segmentation.Subword.name:
-    #     return load_data_subword(config)
+    if segmentation == Segmentation.Subword.name:
+        return load_data_subword(config)
     # if segmentation == Segmentation.Character.name:
     #     return load_data_character(config)
     else:
@@ -92,8 +101,116 @@ def load_data_word(config):
     test_dataloader = TextDataloader(data_prep(test_dataset), max_seq_len)
 
     print(f"[End Load Data] ({time.time() - ts:3f}s)")
-    return train_dataloader, val_dataloader, test_dataloader, vocab
+    return train_dataloader, val_dataloader, test_dataloader, vocab, tokenizer
 
+# load subword based training data
+
+
+def create_subword_tokenizer(config):
+    dataset, vocab_size, max_seq_len = extract_config(
+        config, "dataset", "vocab_size", "max_seq_len")
+    
+    tokenizer = Tokenizer(BPE())
+    tokenizer.pre_tokenizer = Whitespace()
+
+    location = TRAINING_DATA[dataset]['location']
+    paths = list(map(lambda x: str(DATA_PATH+location+x),
+                     TRAINING_DATA[dataset]['filenames']))
+    trainer = BpeTrainer(
+        vocab_size=vocab_size,
+        special_tokens=["[UNK]", "[CLS]", "[SEP]", "[PAD]", "[MASK]", "<unk>"])
+
+    tokenizer.train(files=paths, trainer=trainer)
+
+    return tokenizer
+
+def load_data_subword(config):
+    print("[Start Load Data]")
+    ts = time.time()
+
+    # get dataset
+    dataset, batch_size, max_seq_len = extract_config(
+        config, "dataset", "batch_size", "max_seq_len")
+    dataset = getattr(datasets, dataset)
+    print(f"Fetched Data ({time.time() - ts:3f}s)")
+
+    # tokenize
+    tokenizer = create_subword_tokenizer(config)
+
+    # split dataset
+    train_dataset, val_dataset, test_dataset = dataset.splits(
+        text_field=Field())
+    print(f"Tokenized and Split Data ({time.time() - ts:3f}s)")
+
+    # get vocabulary
+    vocab = tokenizer.get_vocab()
+
+    # data prep
+    def data_prep(tt_dataset_split):
+        raw_text_iter = tt_dataset_split[0].text
+        data = [torch.tensor(tokenizer.encode(item).ids,
+                             dtype=torch.long) for item in raw_text_iter]
+        data = torch.cat(tuple(filter(lambda t: t.numel() > 0, data)))
+        # Divide the dataset into bsz parts.
+        nbatch = data.size(0) // batch_size
+        # Trim off any extra elements that wouldn't cleanly fit (remainders).
+        data = data.narrow(0, 0, nbatch * batch_size)
+        # Evenly divide the data across the batch_size batches.
+        data = data.view(batch_size, -1).t().contiguous()
+        return data
+
+    # setup dataloaders
+    train_dataloader = TextDataloader(data_prep(train_dataset), max_seq_len)
+    val_dataloader = TextDataloader(data_prep(val_dataset), max_seq_len)
+    test_dataloader = TextDataloader(data_prep(test_dataset), max_seq_len)
+
+    print(f"[End Load Data] ({time.time() - ts:3f}s)")
+    return train_dataloader, val_dataloader, test_dataloader, vocab, tokenizer
+
+
+def load_data_bbpe(config):
+    print("[Start Load Data]")
+    ts = time.time()
+
+    # get dataset
+    dataset, batch_size, max_seq_len = extract_config(
+        config, "dataset", "batch_size", "max_seq_len")
+    dataset = getattr(datasets, dataset)
+    print(f"Fetched Data ({time.time() - ts:3f}s)")
+
+    # tokenize
+    pretrained_weights = 'gpt2'
+    tokenizer_en = GPT2TokenizerFast.from_pretrained(pretrained_weights)
+    tokenizer_en.pad_token = tokenizer_en.eos_token
+
+    # split dataset
+    train_dataset, val_dataset, test_dataset = dataset.splits(
+        text_field=field_processor)
+    print(f"Tokenized and Split Data ({time.time() - ts:3f}s)")
+
+    # get vocabulary
+    vocab = tokenizer_en.get_vocab()
+
+    # data prep
+    def data_prep(tt_dataset_split):
+        raw_text_iter = tt_dataset_split[0].text
+        data = [tokenizer_en.encode(item).ids for item in raw_text_iter]
+        data = torch.cat(tuple(filter(lambda t: t.numel() > 0, data)))
+        # Divide the dataset into bsz parts.
+        nbatch = data.size(0) // batch_size
+        # Trim off any extra elements that wouldn't cleanly fit (remainders).
+        data = data.narrow(0, 0, nbatch * batch_size)
+        # Evenly divide the data across the batch_size batches.
+        data = data.view(batch_size, -1).t().contiguous()
+        return data
+
+    # setup dataloaders
+    train_dataloader = TextDataloader(data_prep(train_dataset), max_seq_len)
+    val_dataloader = TextDataloader(data_prep(val_dataset), max_seq_len)
+    test_dataloader = TextDataloader(data_prep(test_dataset), max_seq_len)
+
+    print(f"[End Load Data] ({time.time() - ts:3f}s)")
+    return train_dataloader, val_dataloader, test_dataloader, vocab, tokenizer
 
 if __name__ == "__main__":
     config = {
@@ -102,8 +219,9 @@ if __name__ == "__main__":
         "n_attention_heads": 2,
         "n_encoder_layers": 0,
         "n_decoder_layers": 2,
-        "dataset": Dataset.PennTreebank.name,
-        "segmentation": Segmentation.Word.name,
+        "dataset": Dataset.WikiText2.name,
+        "segmentation": Segmentation.Subword.name,
+        "vocab_size": 40000,
         "max_seq_len": 35,
         "batch_size": 20,
         "eval_batch_size": 10,
@@ -116,7 +234,7 @@ if __name__ == "__main__":
         "loss_criterion": "CrossEntropyLoss"
     }
 
-    train_dataloader, val_dataloader, test_dataloader, vocab = load_data(config)
+    train_dataloader, val_dataloader, test_dataloader, vocab, tokenizer = load_data(config)
     # print(vocab.stoi)
     
     for batch in train_dataloader:
@@ -125,5 +243,5 @@ if __name__ == "__main__":
         print("targets", targets.shape)
         break
 
-    print(emb_to_string(data[0], vocab))
-    print(emb_to_string(targets[0:20], vocab))
+    print(tokenizer.decode(data[0].tolist()))
+    print(tokenizer.decode(targets[0:20].tolist()))
