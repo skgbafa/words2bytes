@@ -5,8 +5,8 @@ import pytorch_lightning as pl
 
 from constants import *
 
-from data import load_data
-from transformer import DecoderOnlyTransformer
+from data_pl import load_data
+from transformer_pl import DecoderOnlyTransformer
 
 
 # default config
@@ -18,6 +18,7 @@ default_config = {
     "n_decoder_layers": 2,
     "dataset": Dataset.PennTreebank.name,
     "segmentation": Segmentation.Word.name,
+    "vocab_size": 40000, # subword/bbpe only
     "max_seq_len": 35,
     "batch_size": 20,
     "eval_batch_size": 10,
@@ -73,8 +74,8 @@ def train_and_eval(config=default_config, entity=WANDB_ENTITY, num_gpus=2):
     config = run.config
 
     # load data
-    train_loader, val_loader, test_loader, vocab = load_data(config)
-    ntokens = len(vocab.stoi)
+    train_loader, val_loader, test_loader, vocab, tokenizer = load_data(config)
+    ntokens = len(vocab)
 
     # run model
     model = DecoderOnlyTransformer(config, ntokens)
