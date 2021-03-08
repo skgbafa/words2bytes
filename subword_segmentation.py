@@ -9,7 +9,7 @@ benchmark_config_1 = {
     "n_attention_heads": 12,  # num_heads
     "n_encoder_layers": 0,  # num_layers
     "n_decoder_layers": 12,  # num_layers
-    "dataset": Dataset.WikiText2.name,
+    "dataset": Dataset.PennTreebank.name,
     "segmentation": Segmentation.Subword.name,
     "vocab_size": 40000,
     "max_seq_len": 64,  # max_length

@@ -23,6 +23,12 @@ def emb_to_string(emb, vocab):
     return ' '.join(words)
 
 
+def logTensor(tensor, note: None):
+    try:
+        print(note, tensor.shape, tensor.get_device())
+    except:
+        print(note, tensor.shape)
+
 if __name__ == "__main__":
   config = {
     "embedding_dimension": 200,

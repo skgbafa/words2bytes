@@ -16,16 +16,15 @@ class Segmentation(enum.Enum):
     Word = 0,
     Subword = 1
     Character = 2
-    BPE = 3
-    BBPE = 4
-    BYTE = 5
+    BBPE = 3
+    BYTE = 4
 
 
 DATA_PATH = './.data/'
 TRAINING_DATA = {
     'PennTreebank': {
         "location": "penn-treebank/",
-        "filenames": ['ptb.train.tokens', 'ptb.valid.tokens', 'ptb.test.tokens']
+        "filenames": ['ptb.train.txt', 'ptb.valid.txt', 'ptb.test.txt']
     },
     'WikiText2': {
         "location": "wikitext-2/wikitext-2/",
@@ -40,3 +39,5 @@ TRAINING_DATA = {
 # global variables
 # WANDB_ENTITY = "skgbafa"
 WANDB_ENTITY = "openai-scholars"
+
+DEBUG_ON=True

@@ -110,7 +110,8 @@ class DecoderOnlyTransformer(pl.LightningModule):
 
         # training setup
         self.criterion = nn.CrossEntropyLoss()
-        self.wandb_run = wandb.init(config=config, entity=WANDB_ENTITY)
+        if not DEBUG_ON:
+            self.wandb_run = wandb.init(config=config, entity=WANDB_ENTITY)
 
         self._reset_parameters()
 
@@ -168,11 +169,12 @@ class DecoderOnlyTransformer(pl.LightningModule):
         loss = self.criterion(output_flat, targets)
 
         # wandb logging
-        wandb.log({
-            "batch": batch_idx,
-            "batch_loss": loss.item(),
-            "ppl": math.exp(loss.item()),
-        })
+        if not DEBUG_ON:
+            wandb.log({
+                "batch": batch_idx,
+                "batch_loss": loss.item(),
+                "ppl": math.exp(loss.item()),
+            })
 
         return loss
 
@@ -183,7 +185,8 @@ class DecoderOnlyTransformer(pl.LightningModule):
         output_flat = output.view(-1, self.ntokens)
         loss = self.criterion(output_flat, targets)
 
-        wandb.log({"val_loss": loss, "val_ppl": math.exp(loss)})
+        if not DEBUG_ON:
+            wandb.log({"val_loss": loss, "val_ppl": math.exp(loss)})
         return loss
 
     def configure_optimizers(self):
