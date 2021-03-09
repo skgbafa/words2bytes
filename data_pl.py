@@ -2,15 +2,15 @@ import time
 import os
 
 import torch
-from torch.utils.data import DataLoader
+# from torch.utils.data import DataLoader
 
 from torchtext import datasets
 from torchtext.data import Field
 from torchtext.data.utils import get_tokenizer
 
-from transformers import AutoTokenizer
+# from transformers import AutoTokenizer
 
-from transformers import GPT2TokenizerFast
+# from transformers import GPT2TokenizerFast
 from tokenizers import ByteLevelBPETokenizer
 
 from tokenizers import Tokenizer
@@ -24,12 +24,12 @@ from utils import *
 
 
 class TextDataloader:
-    def __init__(self, dataset, max_seq_len):
+    def __init__(self, dataset, tokenizer, max_seq_len, batch_size):
+        self.dataset = self.prep_data(dataset, tokenizer)
+        self.tokenizer = tokenizer
         self.max_seq_len = max_seq_len
-        self.dataset = dataset
-        logTensor(dataset, "dataset")
-
-        self.dataset_len = len(dataset)
+        self.batch_size = batch_size
+        self.dataset_len = len(self.dataset)
 
     def __iter__(self):
         self.index = 0
@@ -37,22 +37,31 @@ class TextDataloader:
 
     def __next__(self):
         i = self.index
-        # seq_len = min(self.max_seq_len, self.dataset_len - 1 - i)
-        seq_len = self.max_seq_len
-        print(seq_len)
-        data = self.dataset[i:i+seq_len]
-        logTensor(data, "data")
-        target = self.dataset[i:i+1+seq_len].reshape(-1)
-        data = data[0:len(data) - 1]
-        logTensor(data, "data2")
 
-        logTensor(target, "target1")
+        seq_len = min(self.max_seq_len, self.dataset_len - 1 - i)
+        chunk_len = seq_len * self.batch_size
+        data = self.dataset[i:i + chunk_len]
+        target = self.dataset[i+1:i+1+chunk_len].reshape(-1)
 
-        target = target[1: len(target) - data.size(1) + 1]  # adjust targets
-        logTensor(data, "data3")
-        logTensor(target, "target2")
         self.index += 1
+        data = self.batchify(data)
         return data, target
+
+    def prep_data(self, dataset, tokenizer):
+        raw_text_iter = dataset[0].text
+        data = [torch.tensor(tokenizer.encode(item).ids,
+                             dtype=torch.long) for item in raw_text_iter]
+        data = torch.cat(tuple(filter(lambda t: t.numel() > 0, data)))
+        return data
+    
+    def batchify(self, data):
+        # Divide the dataset into batch_size parts.
+        nbatch = data.size(0) // self.batch_size
+        # Trim off any extra elements that wouldn't cleanly fit (remainders).
+        data = data.narrow(0, 0, nbatch * self.batch_size)
+        # Evenly divide the data across the batch_size batches.
+        data = data.view(self.batch_size, -1).contiguous()
+        return data
 
 # load training data
 def load_data(config):
@@ -178,27 +187,10 @@ def load_data_subword(config):
     # get vocabulary
     vocab = tokenizer.get_vocab()
 
-    # data prep
-    def data_prep(tt_dataset_split):
-        raw_text_iter = tt_dataset_split[0].text
-        data = [torch.tensor(tokenizer.encode(item).ids,
-                             dtype=torch.long) for item in raw_text_iter]
-        data = torch.cat(tuple(filter(lambda t: t.numel() > 0, data)))
-        # TESTING, trim data
-        data = data[0:batch_size*64]
-        print(data.shape)
-        # Divide the dataset into bsz parts.
-        nbatch = data.size(0) // batch_size
-        # Trim off any extra elements that wouldn't cleanly fit (remainders).
-        data = data.narrow(0, 0, nbatch * batch_size)
-        # Evenly divide the data across the batch_size batches.
-        data = data.view(batch_size, -1).t().contiguous()
-        return data
-
     # setup dataloaders
-    train_dataloader = TextDataloader(data_prep(train_dataset), max_seq_len)
-    val_dataloader = TextDataloader(data_prep(val_dataset), max_seq_len)
-    test_dataloader = TextDataloader(data_prep(test_dataset), max_seq_len)
+    train_dataloader = TextDataloader(train_dataset, tokenizer, max_seq_len, batch_size)
+    val_dataloader = TextDataloader(val_dataset, tokenizer, max_seq_len, batch_size)
+    test_dataloader = TextDataloader(test_dataset, tokenizer, max_seq_len, batch_size)
 
     print(f"[End Load Data] ({time.time() - ts:3f}s)")
     return train_dataloader, val_dataloader, test_dataloader, vocab, tokenizer
