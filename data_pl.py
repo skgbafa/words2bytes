@@ -40,6 +40,9 @@ class TextDataloader:
 
         seq_len = min(self.max_seq_len, self.dataset_len - 1 - i)
         chunk_len = seq_len * self.batch_size
+        if (i > self.dataset_len // chunk_len):
+            # end iteration
+            raise StopIteration
         data = self.dataset[i:i + chunk_len]
         target = self.dataset[i+1:i+1+chunk_len].reshape(-1)
 
@@ -60,7 +63,7 @@ class TextDataloader:
         # Trim off any extra elements that wouldn't cleanly fit (remainders).
         data = data.narrow(0, 0, nbatch * self.batch_size)
         # Evenly divide the data across the batch_size batches.
-        data = data.view(self.batch_size, -1).contiguous()
+        data = data.view(-1, self.batch_size).contiguous()
         return data
 
 # load training data
@@ -130,6 +133,18 @@ def create_subword_tokenizer(config):
     dataset, vocab_size = extract_config(
         config, "dataset", "vocab_size")
     
+    # get location
+    output_location = 'tokenizer/'
+    tokenizer_loc = 'BBPE_tokenizer_' + str(vocab_size)
+    path_to_tokenizer_loc = DATA_PATH+output_location+tokenizer_loc + '/'
+
+    # # load tokenizer
+    # tokenizer_pt = AutoTokenizer.from_pretrained(
+    #     str(path_to_tokenizer_loc),
+    #     pad_token='<|endoftext|>')
+    # print(tokenizer_pt)
+
+    # build tokenizer
     tokenizer = Tokenizer(BPE())
     tokenizer.pre_tokenizer = Whitespace()
 
@@ -141,6 +156,14 @@ def create_subword_tokenizer(config):
         special_tokens=["[UNK]", "[CLS]", "[SEP]", "[PAD]", "[MASK]", "<unk>"])
 
     tokenizer.train(files=paths, trainer=trainer)
+
+    # # save tokenizer
+    # try:
+    #     if not os.path.isdir(path_to_tokenizer_loc):
+    #         os.makedirs(path_to_tokenizer_loc)
+    #     tokenizer.save_model(str(path_to_tokenizer_loc))
+    # except Exception as e:
+    #         print("Error saving tokenizer", e)
 
     return tokenizer
 
@@ -284,10 +307,11 @@ if __name__ == "__main__":
     # print(vocab.stoi)
     
     for batch in train_dataloader:
+        # print(batch)    
         data, targets = batch
         print("data", data.shape)
         print("targets", targets.shape)
-        break
+        # break
 
     print(tokenizer.decode(data[0].tolist()))
     print(tokenizer.decode(targets[0:20].tolist()))

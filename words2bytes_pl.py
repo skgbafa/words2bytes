@@ -4,6 +4,7 @@ import wandb
 import pytorch_lightning as pl
 
 from constants import *
+from utils import *
 
 from data_pl import load_data
 from transformer_pl import DecoderOnlyTransformer
@@ -69,9 +70,10 @@ def generateExperiements():
     return sweep_id
 
 # sweep function
-def train_and_eval(config=default_config, entity=WANDB_ENTITY, num_gpus=2):
+def train_and_eval(config=default_config, entity=WANDB_ENTITY, num_gpus=4):
     run = wandb.init(config=config, entity=entity)
     config = run.config
+    n_epochs = extract_config(config, "n_epochs")
 
     # load data
     train_loader, val_loader, test_loader, vocab, tokenizer = load_data(config)
@@ -79,7 +81,7 @@ def train_and_eval(config=default_config, entity=WANDB_ENTITY, num_gpus=2):
 
     # run model
     model = DecoderOnlyTransformer(config, ntokens)
-    trainer = pl.Trainer(gpus=num_gpus, accelerator="dp")
+    trainer = pl.Trainer(gpus=num_gpus, accelerator="dp", max_epochs=n_epochs + 1)
     trainer.fit(model, train_loader, val_loader)
 
 
