@@ -40,4 +40,4 @@ TRAINING_DATA = {
 # WANDB_ENTITY = "skgbafa"
 WANDB_ENTITY = "openai-scholars"
 
-DEBUG_ON=True
+DEBUG_ON=False

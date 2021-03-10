@@ -113,6 +113,9 @@ class DecoderOnlyTransformer(pl.LightningModule):
         if not DEBUG_ON:
             self.wandb_run = wandb.init(config=config, entity=WANDB_ENTITY)
 
+        # logging
+        self.training_tokens_processed = 0
+
         self._reset_parameters()
 
     def extract_config(self):
@@ -167,6 +170,7 @@ class DecoderOnlyTransformer(pl.LightningModule):
         output = self(data, src_mask)
         output_flat = output.view(-1, self.ntokens)
         loss = self.criterion(output_flat, targets)
+        self.training_tokens_processed += torch.numel(data)
 
         # wandb logging
         if not DEBUG_ON:
@@ -174,6 +178,7 @@ class DecoderOnlyTransformer(pl.LightningModule):
                 "batch": batch_idx,
                 "batch_loss": loss.item(),
                 "ppl": math.exp(loss.item()),
+                "training_tokens_processed": self.training_tokens_processed,
             })
 
         return loss

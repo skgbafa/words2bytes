@@ -129,20 +129,22 @@ def load_data_word(config):
     return train_dataloader, val_dataloader, test_dataloader, vocab, tokenizer
 
 # load subword based training data
+
+
 def create_subword_tokenizer(config):
     dataset, vocab_size = extract_config(
         config, "dataset", "vocab_size")
-    
+
     # get location
     output_location = 'tokenizer/'
-    tokenizer_loc = 'BBPE_tokenizer_' + str(vocab_size)
-    path_to_tokenizer_loc = DATA_PATH+output_location+tokenizer_loc + '/'
+    tokenizer_loc = 'bpe_tokenizer_' + str(vocab_size) + ".tokenizer.json"
+    path_to_tokenizer_loc = DATA_PATH+output_location
+    tokenizer_filepath = path_to_tokenizer_loc+tokenizer_loc
 
-    # # load tokenizer
-    # tokenizer_pt = AutoTokenizer.from_pretrained(
-    #     str(path_to_tokenizer_loc),
-    #     pad_token='<|endoftext|>')
-    # print(tokenizer_pt)
+    # load tokenizer
+    if os.path.isfile(tokenizer_filepath):
+        tokenizer = Tokenizer.from_file(tokenizer_filepath)
+        return tokenizer
 
     # build tokenizer
     tokenizer = Tokenizer(BPE())
@@ -157,13 +159,13 @@ def create_subword_tokenizer(config):
 
     tokenizer.train(files=paths, trainer=trainer)
 
-    # # save tokenizer
-    # try:
-    #     if not os.path.isdir(path_to_tokenizer_loc):
-    #         os.makedirs(path_to_tokenizer_loc)
-    #     tokenizer.save_model(str(path_to_tokenizer_loc))
-    # except Exception as e:
-    #         print("Error saving tokenizer", e)
+    # save tokenizer
+    try:
+        if not os.path.isdir(path_to_tokenizer_loc):
+            os.makedirs(path_to_tokenizer_loc)
+        tokenizer.save(str(tokenizer_filepath))
+    except Exception as e:
+        print("Error saving tokenizer", e)
 
     return tokenizer
 
