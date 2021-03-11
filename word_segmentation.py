@@ -55,12 +55,12 @@ def train_and_eval(config=benchmark_config_1, entity=WANDB_ENTITY, num_gpus=4):
 
 sweep_parameters = {
     "learning_rate": {
-        "values": [0.0000625, 0.00003125, 0.000015625, 0.00000625]
+        "values": [ 0.00000625, 0.000015625, 0.00003125, 0.0000625]
     }
 }
 
 sweep_config = {
-    "name": "Experamental Sweeps",
+    "name": "LR Sweeps",
     "method": "grid",
     "parameters": sweep_parameters
 }
