@@ -91,8 +91,7 @@ class DecoderOnlyTransformer(pl.LightningModule):
         super(DecoderOnlyTransformer, self).__init__()
         
         # model vars
-        self.config = config
-        self.extract_config()
+        self.extract_config(config)
         self.ntokens = ntokens
 
         # decoder setup
@@ -118,9 +117,9 @@ class DecoderOnlyTransformer(pl.LightningModule):
 
         self._reset_parameters()
 
-    def extract_config(self):
+    def extract_config(self, config):
         embedding_dimension, n_attention_heads, n_decoder_layers, ff_dimension, dropout, learning_rate, adam_b1, adam_b2, adam_l2_weightdecay = extract_config(
-            self.config, "embedding_dimension", "n_attention_heads", "n_decoder_layers", "ff_dimension", "dropout", "learning_rate", "adam_b1", "adam_b2", "adam_l2_weightdecay")
+            config, "embedding_dimension", "n_attention_heads", "n_decoder_layers", "ff_dimension", "dropout", "learning_rate", "adam_b1", "adam_b2", "adam_l2_weightdecay")
 
         self.d_model = embedding_dimension
         self.n_heads = n_attention_heads
@@ -170,7 +169,7 @@ class DecoderOnlyTransformer(pl.LightningModule):
         output = self(data, src_mask)
         output_flat = output.view(-1, self.ntokens)
         loss = self.criterion(output_flat, targets)
-        self.training_tokens_processed += torch.numel(data)
+        self.training_tokens_processed = self.training_tokens_processed + torch.numel(data)
 
         # wandb logging
         if not DEBUG_ON:
