@@ -81,7 +81,7 @@ def train_and_eval(config=default_config, entity=WANDB_ENTITY, num_gpus=4):
 
     # run model
     model = DecoderOnlyTransformer(config, ntokens)
-    trainer = pl.Trainer(gpus=num_gpus, accelerator="dp", max_epochs=n_epochs + 1)
+    trainer = pl.Trainer(gpus=num_gpus, accelerator="dp", max_epochs=n_epochs)
     trainer.fit(model, train_loader, val_loader)
 
 
