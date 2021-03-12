@@ -55,21 +55,24 @@ class TextDataloader:
         chunk_pos = i * self.chunk_len
         data = self.dataset[chunk_pos: chunk_pos + self.chunk_len]
         target = self.dataset[(chunk_pos) + 1: (chunk_pos + self.chunk_len) + 1]
-        
+
+        num_batches = min(self.batch_size, (self.dataset_len - chunk_pos) // self.max_seq_len)
+        if num_batches == 0:
+            raise StopIteration
+
         if(len(data) != len(target)):
             # remove mismatched batch sizes
-            data = data.narrow(0, 0, self.max_seq_len * (self.batch_size - 1))
-            target = target.narrow(
-                0, 0, self.max_seq_len * (self.batch_size - 1))
+            data = data.narrow(0, 0, self.max_seq_len * (num_batches))
+            target = target.narrow(0, 0, self.max_seq_len * (num_batches))
 
         self.index += 1
 
-        return self.batchify(data, target)
+        return self.batchify(data, target, num_batches)
 
-    def batchify(self, data, target):
+    def batchify(self, data, target, num_batches):
         # Evenly divide the data across the batch_size batches.
-        data = data.view(self.batch_size, -1).contiguous()
-        target = target.view(self.batch_size, -1).contiguous()
+        data = data.view(num_batches, -1).contiguous()
+        target = target.view(num_batches, -1).contiguous()
 
         # shuffle data
         if self.shuffle:

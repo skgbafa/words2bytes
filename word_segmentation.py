@@ -38,6 +38,7 @@ benchmark_config_1 = {
     "loss_criterion": "CrossEntropyLoss"
 }
 
+
 def train_and_eval(config=benchmark_config_1, entity=WANDB_ENTITY, num_gpus=4):
     run = wandb.init(config=config, entity=entity)
     config = run.config
@@ -53,17 +54,20 @@ def train_and_eval(config=benchmark_config_1, entity=WANDB_ENTITY, num_gpus=4):
     trainer.fit(model, train_loader, val_loader)
 
 
-sweep_parameters = {
-    "learning_rate": {
-        "values": [ 0.00000625, 0.000015625, 0.00003125, 0.0000625]
-    }
-}
+train_and_eval()
 
-sweep_config = {
-    "name": "LR Sweeps",
-    "method": "grid",
-    "parameters": sweep_parameters
-}
 
-sweep_id = wandb.sweep(sweep_config, entity=WANDB_ENTITY)
-wandb.agent(sweep_id, function=train_and_eval)
+# sweep_parameters = {
+#     "learning_rate": {
+#         "values": [ 0.00000625, 0.000015625, 0.00003125, 0.0000625]
+#     }
+# }
+
+# sweep_config = {
+#     "name": "LR Sweeps",
+#     "method": "grid",
+#     "parameters": sweep_parameters
+# }
+
+# sweep_id = wandb.sweep(sweep_config, entity=WANDB_ENTITY)
+# wandb.agent(sweep_id, function=train_and_eval)
