@@ -29,15 +29,20 @@ from utils import *
 
 class TextDataloader:
     def __init__(self, dataset, max_seq_len, batch_size, shuffle=True):
-        self.dataset = dataset
         self.max_seq_len = max_seq_len
         self.batch_size = batch_size
-        self.dataset_len = len(dataset)
 
-        # shuffle logic
+        # shuffle logic vars
         self.shuffle = shuffle
         self.chunk_len = max_seq_len * batch_size
-        num_batches = math.ceil(self.dataset_len/self.chunk_len)
+
+        # trim dataset, fix for multigpu batching bugs
+        num_batches = math.ceil(len(dataset)/self.chunk_len)
+        trimmed_dataset_size = (num_batches - 1) * self.chunk_len + 1
+        self.dataset = dataset[0: trimmed_dataset_size]
+        self.dataset_len = trimmed_dataset_size
+
+        # non-shuffled batch order
         self.batch_order = np.array(range(num_batches))
 
         if shuffle:
@@ -62,8 +67,8 @@ class TextDataloader:
 
         if(len(data) != len(target)):
             # remove mismatched batch sizes
-            data = data.narrow(0, 0, self.max_seq_len * (num_batches))
-            target = target.narrow(0, 0, self.max_seq_len * (num_batches))
+            data = data.narrow(0, 0, self.max_seq_len * (num_batches - 1))
+            target = target.narrow(0, 0, self.max_seq_len * (num_batches - 1))
 
         self.index += 1
 
@@ -245,7 +250,7 @@ if __name__ == "__main__":
         "n_encoder_layers": 0,
         "n_decoder_layers": 2,
         "dataset": Dataset.WikiText2.name,
-        "segmentation": Segmentation.Subword.name,
+        "segmentation": Segmentation.Word.name,
         "vocab_size": 40000,
         "max_seq_len": 32,
         "batch_size": 20,
@@ -265,12 +270,15 @@ if __name__ == "__main__":
     for batch in train_dataloader:
         # print(batch)    
         data, targets = batch
-        print("data", data.shape)
-        print("targets", targets.shape)
-        break
+        print("[train] data.shape - targets.shape: ", data.shape,  targets.shape)
 
-    print(data)
-    print(tokenizer.decode(data[0].tolist()))
-    print(tokenizer.decode(targets[0:20].tolist()))
+    # for batch in val_dataloader:
+    #     # print(batch)    
+    #     data, targets = batch
+    #     print("[val] data.shape - targets.shape: ", data.shape,  targets.shape)
+
+    # print(data)
+    # print(tokenizer.decode(data[0].tolist()))
+    # print(tokenizer.decode(targets[0:20].tolist()))
 
     # check word 

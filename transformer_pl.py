@@ -168,6 +168,13 @@ class DecoderOnlyTransformer(pl.LightningModule):
         src_mask = self.generate_square_subsequent_mask(data.size(0))
         output = self(data, src_mask)
         output_flat = output.view(-1, self.ntokens)
+        # print("training_step:", batch_idx)
+        # logTensor(data, "data")
+        # logTensor(output, "output")
+        # logTensor(output_flat, "output_flat")
+        # logTensor(targets, "targets")
+        # print(data[0])
+        # print(targets[0:20])
         loss = self.criterion(output_flat, targets)
         self.training_tokens_processed = self.training_tokens_processed + torch.numel(data)
 
