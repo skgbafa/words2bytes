@@ -29,9 +29,9 @@ benchmark_config_1 = {
     "eval_batch_size": 8,
     "n_epochs": 3,
     # "learning_rate": 0.0000625,
-    # "learning_rate": 0.00003125,
+    "learning_rate": 0.00003125,
     # "learning_rate": 0.000015625,
-    "learning_rate": 0.00000625,
+    # "learning_rate": 0.00000625,
     "adam_b1": 0.9,
     "adam_b2": 0.999,
     "adam_l2_weightdecay": 0.01,
@@ -54,20 +54,20 @@ def train_and_eval(config=benchmark_config_1, entity=WANDB_ENTITY, num_gpus=4):
     trainer.fit(model, train_loader, val_loader)
 
 
-train_and_eval()
+# train_and_eval()
 
 
-# sweep_parameters = {
-#     "learning_rate": {
-#         "values": [ 0.00000625, 0.000015625, 0.00003125, 0.0000625]
-#     }
-# }
+sweep_parameters = {
+    "learning_rate": {
+        "values": [ 0.00000625, 0.000015625, 0.00003125, 0.0000625]
+    }
+}
 
-# sweep_config = {
-#     "name": "LR Sweeps",
-#     "method": "grid",
-#     "parameters": sweep_parameters
-# }
+sweep_config = {
+    "name": "LR Sweeps",
+    "method": "grid",
+    "parameters": sweep_parameters
+}
 
-# sweep_id = wandb.sweep(sweep_config, entity=WANDB_ENTITY)
-# wandb.agent(sweep_id, function=train_and_eval)
+sweep_id = wandb.sweep(sweep_config, entity=WANDB_ENTITY)
+wandb.agent(sweep_id, function=train_and_eval)

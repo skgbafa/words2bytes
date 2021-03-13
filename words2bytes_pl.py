@@ -32,27 +32,44 @@ default_config = {
     "loss_criterion": "CrossEntropyLoss"
 }
 
+# benchmarked against https://arxiv.org/pdf/1904.09408v2.pdf
+# bert_lm_12_768_12_300_1150_wikitext2
+benchmark_config_1 = {
+    "embedding_dimension": 768,  # units
+    "ff_dimension": 3072,  # hidden_size
+    "n_attention_heads": 12,  # num_heads
+    "n_encoder_layers": 0,  # num_layers
+    "n_decoder_layers": 12,  # num_layers
+    "dataset": Dataset.PennTreebank.name,
+    "segmentation": Segmentation.Word.name,
+    "vocab_size": 40000,
+    "max_seq_len": 64,  # max_length
+    "dropout": 0.1,  # dropout
+    "batch_size": 8,
+    "eval_batch_size": 8,
+    "n_epochs": 3,
+    "learning_rate": 0.00003125,
+    "adam_b1": 0.9,
+    "adam_b2": 0.999,
+    "adam_l2_weightdecay": 0.01,
+    "loss_criterion": "CrossEntropyLoss"
+}
+
 # experiment generation
 def generateExperiements():
-    WANDB_ENTITY = "skgbafa"
-    # WANDB_ENTITY = "openai-scholars"
+    # WANDB_ENTITY = "skgbafa"
+    WANDB_ENTITY = "openai-scholars"
 
-    # experiment_datasets = [ Dataset.PennTreebank.name, Dataset.WikiText2.name, Dataset.WikiText103.name ]
-    experiment_datasets = [ Dataset.WikiText2.name ]
-    experiment_segmentation = [ Segmentation.Word.name, Segmentation.Character.name ]
+    experiment_datasets = [ Dataset.PennTreebank.name,Dataset.WikiText2.name, Dataset.WikiText103.name ]
+    # experiment_datasets = [ Dataset.WikiText2.name ]
+    experiment_segmentation = [ Segmentation.Word.name, Segmentation.Subword.name ]
 
     sweep_parameters = {
-        "n_attention_heads": {
-            "values": [2, 3]
-        },
-        "n_decoder_layers": {
-            "values": [2, 4, 6]
-        },
         "dataset": {
             "values": experiment_datasets
         },
         "n_epochs": {
-            "values": [3]
+            "values": [20]
         },
         "segmentation": {
             "values": experiment_segmentation
@@ -60,7 +77,7 @@ def generateExperiements():
     }
 
     sweep_config = {
-        "name": "Experamental Sweeps",
+        "name": "Benchmark Sweeps",
         "method": "grid",
         "parameters": sweep_parameters
     }
@@ -70,7 +87,7 @@ def generateExperiements():
     return sweep_id
 
 # sweep function
-def train_and_eval(config=default_config, entity=WANDB_ENTITY, num_gpus=4):
+def train_and_eval(config=benchmark_config_1, entity=WANDB_ENTITY, num_gpus=4):
     run = wandb.init(config=config, entity=entity)
     config = run.config
     n_epochs = extract_config(config, "n_epochs")
