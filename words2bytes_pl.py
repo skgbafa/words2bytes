@@ -100,6 +100,8 @@ def train_and_eval(config=benchmark_config_1, entity=WANDB_ENTITY, num_gpus=4):
     model = DecoderOnlyTransformer(config, ntokens)
     trainer = pl.Trainer(gpus=num_gpus, accelerator="dp", max_epochs=n_epochs)
     trainer.fit(model, train_loader, val_loader)
+        # trainer.test(model, test_loader)
+
 
 
 if __name__ == "__main__":

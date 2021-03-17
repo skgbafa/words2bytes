@@ -20,14 +20,14 @@ benchmark_config_1 = {
     "n_encoder_layers": 0,  # num_layers
     "n_decoder_layers": 12,  # num_layers
     "dataset": Dataset.PennTreebank.name,
-    "segmentation": Segmentation.Word.name,
+    "segmentation": Segmentation.Subword.name,
     "vocab_size": 40000,
     "max_seq_len": 64,  # max_length
     "dropout": 0.1,  # dropout
     # "batch_size": 16,
-    "batch_size": 8,
+    "batch_size": 12,
     "eval_batch_size": 8,
-    "n_epochs": 3,
+    "n_epochs": 10,
     # "learning_rate": 0.0000625,
     "learning_rate": 0.00003125,
     # "learning_rate": 0.000015625,
