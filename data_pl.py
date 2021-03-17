@@ -36,30 +36,32 @@ class TextDataloader:
         self.shuffle = shuffle
         self.chunk_len = max_seq_len * batch_size
 
-        # trim dataset, fix for multigpu batching bugs
-        num_batches = math.ceil(len(dataset)/self.chunk_len)
-        trimmed_dataset_size = (num_batches - 1) * self.chunk_len + 1
-        self.dataset = dataset[0: trimmed_dataset_size]
-        self.dataset_len = trimmed_dataset_size
-
-        # non-shuffled batch order
-        self.batch_order = np.array(range(num_batches))
-
+        # get seqence order
+        num_seqs = (len(dataset) - 1) // max_seq_len
+        self.seq_order = np.array(range(num_seqs))
         if shuffle:
-            np.random.shuffle(self.batch_order)
+            np.random.shuffle(self.seq_order)
+
+        # get source, target datasets, trim
+        self.dataset = dataset
+        self.source = self.shuffle_dataset(dataset[0: len(dataset) - 1])
+        self.targets = self.shuffle_dataset(dataset[1: len(dataset)])
+        self.dataset_len = len(self.source)
+        # self.num_batches = math.ceil(num_seqs/self.batch_size) # include non-conforming batches
+        self.num_batches = num_seqs // self.batch_size  # trim off non-conforming batches
 
     def __iter__(self):
         self.index = 0
         return self
 
     def __next__(self):
-        if self.index > len(self.batch_order) - 1:
+        if self.index > self.num_batches - 1:
             raise StopIteration
 
-        i = self.batch_order[self.index]
+        i = self.index
         chunk_pos = i * self.chunk_len
-        data = self.dataset[chunk_pos: chunk_pos + self.chunk_len]
-        target = self.dataset[(chunk_pos) + 1: (chunk_pos + self.chunk_len) + 1]
+        data = self.source[chunk_pos: chunk_pos + self.chunk_len]
+        target = self.targets[chunk_pos: chunk_pos + self.chunk_len]
 
         num_batches = min(self.batch_size, (self.dataset_len - chunk_pos) // self.max_seq_len)
         if num_batches == 0:
@@ -88,6 +90,11 @@ class TextDataloader:
         # flatten targets
         target = target.reshape(-1)
         return data, target.reshape(-1)
+
+    def shuffle_dataset(self, dataset):
+        shuffled_dataset = map(
+            lambda x: dataset[x * self.max_seq_len: (x + 1) * self.max_seq_len], self.seq_order)
+        return torch.cat(list(shuffled_dataset))
 
 # load training data
 def load_data(config):

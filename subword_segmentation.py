@@ -5,7 +5,7 @@ from constants import *
 # bert_lm_12_768_12_300_1150_wikitext2
 benchmark_config_1 = {
     "embedding_dimension": 768,  # units
-    "ff_dimension": 3072,  # hidden_size
+    "ff_dimension": 768,  # hidden_size
     "n_attention_heads": 12,  # num_heads
     "n_encoder_layers": 0,  # num_layers
     "n_decoder_layers": 12,  # num_layers
