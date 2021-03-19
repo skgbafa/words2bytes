@@ -28,7 +28,10 @@ from utils import *
 
 
 class TextDataloader:
-    def __init__(self, dataset, max_seq_len, batch_size, shuffle=True):
+    previous_source = torch.tensor([])
+    previous_target = torch.tensor([])
+
+    def __init__(self, dataset, max_seq_len, batch_size, shuffle=True, include_previous=True):
         self.max_seq_len = max_seq_len
         self.batch_size = batch_size
 
@@ -46,9 +49,15 @@ class TextDataloader:
         self.dataset = dataset
         self.source = self.shuffle_dataset(dataset[0: len(dataset) - 1])
         self.targets = self.shuffle_dataset(dataset[1: len(dataset)])
-        self.dataset_len = len(self.source)
-        # self.num_batches = math.ceil(num_seqs/self.batch_size) # include non-conforming batches
         self.num_batches = num_seqs // self.batch_size  # trim off non-conforming batches
+
+        # leftover data from previous run is included
+        if include_previous: 
+            self.source = torch.cat([TextDataloader.previous_source, self.source])
+            self.target = torch.cat([TextDataloader.previous_target, self.targets])
+            self.num_batches = math.ceil(num_seqs/self.batch_size) # include non-conforming batches
+
+        self.dataset_len = len(self.source)
 
     def __iter__(self):
         self.index = 0
@@ -63,17 +72,14 @@ class TextDataloader:
         data = self.source[chunk_pos: chunk_pos + self.chunk_len]
         target = self.targets[chunk_pos: chunk_pos + self.chunk_len]
 
-        num_batches = min(self.batch_size, (self.dataset_len - chunk_pos) // self.max_seq_len)
-        if num_batches == 0:
+        num_batches = min(
+            self.batch_size, (self.dataset_len - chunk_pos) // self.max_seq_len)
+        if num_batches < self.batch_size:
+            TextDataloader.previous_source = data
+            TextDataloader.previous_target = target
             raise StopIteration
 
-        if(len(data) != len(target)):
-            # remove mismatched batch sizes
-            data = data.narrow(0, 0, self.max_seq_len * (num_batches - 1))
-            target = target.narrow(0, 0, self.max_seq_len * (num_batches - 1))
-
         self.index += 1
-
         return self.batchify(data, target, num_batches)
 
     def batchify(self, data, target, num_batches):
@@ -95,6 +101,10 @@ class TextDataloader:
         shuffled_dataset = map(
             lambda x: dataset[x * self.max_seq_len: (x + 1) * self.max_seq_len], self.seq_order)
         return torch.cat(list(shuffled_dataset))
+
+    def reset_previous():
+        TextDataloader.previous_source = torch.tensor([])
+        TextDataloader.previous_target = torch.tensor([])
 
 
 def split_dataset(config):
