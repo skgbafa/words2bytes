@@ -62,22 +62,25 @@ def train_and_eval(config=benchmark_config_1, entity=WANDB_ENTITY, num_gpus=-1):
     trainer.fit(model, train_loader, val_loader)
 
 
-train_and_eval()
+# train_and_eval()
 
 # # scale = [0.7, 0.5, 0.33, 0.25, 0.1]
 # scale = [0.65, 0.6, 0.55, 0.5, 0.45, 0.4, 0.375, 0.35]
 
-# sweep_parameters = {
-#     "learning_rate": {
-#         "values": np.multiply(original_lr, scale).tolist()
-#     }
-# }
+sweep_parameters = {
+    "dropout": {
+        "values": [0, 0.1]
+    },
+    "adam_l2_weightdecay": {
+        "values": [0, 0.01]
+    },
+}
 
-# sweep_config = {
-#     "name": "LR Sweeps",
-#     "method": "grid",
-#     "parameters": sweep_parameters
-# }
+sweep_config = {
+    "name": "Dropout - Weight Decay Sweeps",
+    "method": "grid",
+    "parameters": sweep_parameters
+}
 
-# sweep_id = wandb.sweep(sweep_config, entity=WANDB_ENTITY)
-# wandb.agent(sweep_id, function=train_and_eval)
+sweep_id = wandb.sweep(sweep_config, entity=WANDB_ENTITY)
+wandb.agent(sweep_id, function=train_and_eval)

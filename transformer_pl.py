@@ -200,7 +200,8 @@ class DecoderOnlyTransformer(pl.LightningModule):
             self.adam_b1, self.adam_b2), weight_decay=self.adam_l2_weightdecay)
         scheduler = torch.optim.lr_scheduler.StepLR(optimizer, 1.0, gamma=0.95)
 
-        return [optimizer], [scheduler]
+        # return [optimizer], [scheduler]
+        return optimizer
 
 def logTensor(tensor, note: None):
     try:
@@ -212,7 +213,6 @@ def logTensor(tensor, note: None):
 if __name__ == "__main__":
     # instantiate for testing
     from data_pl import load_data
-    from constants import *
 
     config = {
         "embedding_dimension": 200,

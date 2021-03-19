@@ -28,10 +28,7 @@ from utils import *
 
 
 class TextDataloader:
-    previous_source = torch.tensor([])
-    previous_target = torch.tensor([])
-
-    def __init__(self, dataset, max_seq_len, batch_size, shuffle=True, include_previous=True):
+    def __init__(self, dataset, max_seq_len, batch_size, shuffle=True):
         self.max_seq_len = max_seq_len
         self.batch_size = batch_size
 
@@ -40,7 +37,7 @@ class TextDataloader:
         self.chunk_len = max_seq_len * batch_size
 
         # get seqence order
-        num_seqs = (len(dataset) - 1) // max_seq_len
+        num_seqs = (len(dataset) - 1) // self.max_seq_len
         self.seq_order = np.array(range(num_seqs))
         if shuffle:
             np.random.shuffle(self.seq_order)
@@ -49,24 +46,22 @@ class TextDataloader:
         self.dataset = dataset
         self.source = self.shuffle_dataset(dataset[0: len(dataset) - 1])
         self.targets = self.shuffle_dataset(dataset[1: len(dataset)])
-        self.num_batches = num_seqs // self.batch_size  # trim off non-conforming batches
 
-        # leftover data from previous run is included
-        if include_previous: 
-            self.source = torch.cat([TextDataloader.previous_source, self.source])
-            self.target = torch.cat([TextDataloader.previous_target, self.targets])
-            self.num_batches = math.ceil(num_seqs/self.batch_size) # include non-conforming batches
+        # fill remaining batch with beginning
+        epoch_fill_count = (batch_size - num_seqs %
+                            batch_size) * self.max_seq_len
+        self.source = torch.cat([self.source, self.source[0:epoch_fill_count]])
+        self.targets = torch.cat([self.targets, self.targets[0:epoch_fill_count]])
 
         self.dataset_len = len(self.source)
+        self.num_batches = ((self.dataset_len - 1) //
+                            self.max_seq_len) // self.batch_size
 
     def __iter__(self):
         self.index = 0
         return self
 
     def __next__(self):
-        if self.index > self.num_batches - 1:
-            raise StopIteration
-
         i = self.index
         chunk_pos = i * self.chunk_len
         data = self.source[chunk_pos: chunk_pos + self.chunk_len]
@@ -74,9 +69,8 @@ class TextDataloader:
 
         num_batches = min(
             self.batch_size, (self.dataset_len - chunk_pos) // self.max_seq_len)
-        if num_batches < self.batch_size:
-            TextDataloader.previous_source = data
-            TextDataloader.previous_target = target
+
+        if num_batches == 0:
             raise StopIteration
 
         self.index += 1
@@ -101,38 +95,6 @@ class TextDataloader:
         shuffled_dataset = map(
             lambda x: dataset[x * self.max_seq_len: (x + 1) * self.max_seq_len], self.seq_order)
         return torch.cat(list(shuffled_dataset))
-
-    def reset_previous():
-        TextDataloader.previous_source = torch.tensor([])
-        TextDataloader.previous_target = torch.tensor([])
-
-
-def split_dataset(config):
-    dataset = extract_config(config, "dataset")
-    tt_dataset = getattr(datasets, dataset)
-
-    # process non-ptb datasets
-    if dataset != Dataset.PennTreebank.name:
-        return tt_dataset.splits(text_field=Field())
-
-    location = TRAINING_DATA[dataset]['location']
-    paths = list(map(lambda x: str(DATA_PATH+location+x),
-                     TRAINING_DATA[dataset]['filenames']))
-
-    raw_data = map(lambda x: list(open(x, newline='\n')), paths)
-    text_data = []
-    for item in raw_data:
-        item = filter(lambda x: x != '\n', item)
-        text_data.extend(item)
-
-    total_count = len(text_data)
-    train_count = int(0.7 * total_count)
-    valid_count = int(0.2 * total_count)
-    test_count = total_count - train_count - valid_count
-
-    return (text_data[0:train_count], text_data[train_count: train_count + valid_count], text_data[train_count + valid_count: len(text_data)])
-    # return torch.utils.data.random_split(text_data, (train_count, valid_count, test_count))
-
 
 # load training data
 def load_data(config):
@@ -258,9 +220,8 @@ def load_data_subword(config):
     print(f"Fetched Data ({time.time() - ts:3f}s)")
 
     # split dataset
-    train_dataset, val_dataset, test_dataset =  split_dataset(config)
-    # train_dataset, val_dataset, test_dataset = tt_dataset.splits(
-    #     text_field=Field())
+    train_dataset, val_dataset, test_dataset = tt_dataset.splits(
+        text_field=Field())
     print(f"Tokenized and Split Data ({time.time() - ts:3f}s)")
 
     # tokenize
@@ -274,11 +235,7 @@ def load_data_subword(config):
 
     # prep data
     def prep_data(dataset_arr):
-        raw_text_iter = dataset_arr
-        # print(raw_text_iter)
-
-        if dataset != Dataset.PennTreebank.name:
-            raw_text_iter = dataset_arr[0].text
+        raw_text_iter = dataset_arr[0].text
         data = [torch.tensor(tokenizer.encode(item).ids,
                              dtype=torch.long) for item in raw_text_iter]
         data = torch.cat(tuple(filter(lambda t: t.numel() > 0, data)))
