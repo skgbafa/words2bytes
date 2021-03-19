@@ -1,6 +1,9 @@
 from words2bytes_pl import train_and_eval
 from constants import *
 
+
+original_lr = 0.0000625
+
 # benchmarked against https://arxiv.org/pdf/1904.09408v2.pdf
 # bert_lm_12_768_12_300_1150_wikitext2
 benchmark_config_1 = {
@@ -14,10 +17,11 @@ benchmark_config_1 = {
     "vocab_size": 40000,
     "max_seq_len": 64,  # max_length
     "dropout": 0.1,  # dropout
-    "batch_size": 16,
+    "batch_size": 12,
     "eval_batch_size": 8,
     "n_epochs": 10,
-    "learning_rate": 0.0000625,
+    # "learning_rate": 0.0000625,
+    "learning_rate": original_lr * 0.55,
     "adam_b1": 0.9,
     "adam_b2": 0.999,
     "adam_l2_weightdecay": 0.01,

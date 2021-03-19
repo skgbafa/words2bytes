@@ -96,6 +96,34 @@ class TextDataloader:
             lambda x: dataset[x * self.max_seq_len: (x + 1) * self.max_seq_len], self.seq_order)
         return torch.cat(list(shuffled_dataset))
 
+
+def split_dataset(config):
+    dataset = extract_config(config, "dataset")
+    tt_dataset = getattr(datasets, dataset)
+
+    # process non-ptb datasets
+    if dataset != Dataset.PennTreebank.name:
+        return tt_dataset.splits(text_field=Field())
+
+    location = TRAINING_DATA[dataset]['location']
+    paths = list(map(lambda x: str(DATA_PATH+location+x),
+                     TRAINING_DATA[dataset]['filenames']))
+
+    raw_data = map(lambda x: list(open(x, newline='\n')), paths)
+    text_data = []
+    for item in raw_data:
+        item = filter(lambda x: x != '\n', item)
+        text_data.extend(item)
+
+    total_count = len(text_data)
+    train_count = int(0.7 * total_count)
+    valid_count = int(0.2 * total_count)
+    test_count = total_count - train_count - valid_count
+
+    return (text_data[0:train_count], text_data[train_count: train_count + valid_count], text_data[train_count + valid_count: len(text_data)])
+    # return torch.utils.data.random_split(text_data, (train_count, valid_count, test_count))
+
+
 # load training data
 def load_data(config):
     segmentation = extract_config(config, "segmentation")
@@ -216,12 +244,13 @@ def load_data_subword(config):
     # get dataset
     dataset, batch_size, max_seq_len, segmentation = extract_config(
         config, "dataset", "batch_size", "max_seq_len", "segmentation")
-    dataset = getattr(datasets, dataset)
+    tt_dataset = getattr(datasets, dataset)
     print(f"Fetched Data ({time.time() - ts:3f}s)")
 
     # split dataset
-    train_dataset, val_dataset, test_dataset = dataset.splits(
-        text_field=Field())
+    train_dataset, val_dataset, test_dataset =  split_dataset(config)
+    # train_dataset, val_dataset, test_dataset = tt_dataset.splits(
+    #     text_field=Field())
     print(f"Tokenized and Split Data ({time.time() - ts:3f}s)")
 
     # tokenize
@@ -234,8 +263,12 @@ def load_data_subword(config):
     vocab = tokenizer.get_vocab()
 
     # prep data
-    def prep_data(dataset):
-        raw_text_iter = dataset[0].text
+    def prep_data(dataset_arr):
+        raw_text_iter = dataset_arr
+        # print(raw_text_iter)
+
+        if dataset != Dataset.PennTreebank.name:
+            raw_text_iter = dataset_arr[0].text
         data = [torch.tensor(tokenizer.encode(item).ids,
                              dtype=torch.long) for item in raw_text_iter]
         data = torch.cat(tuple(filter(lambda t: t.numel() > 0, data)))
