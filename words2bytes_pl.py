@@ -97,8 +97,8 @@ def train_and_eval(config=benchmark_config_1, entity=WANDB_ENTITY, num_gpus=4):
     ntokens = len(vocab)
 
     # run model
-    model = DecoderOnlyTransformer(config, ntokens)
     trainer = pl.Trainer(gpus=num_gpus, accelerator="dp", max_epochs=n_epochs)
+    model = DecoderOnlyTransformer(config, ntokens, trainer)
     trainer.fit(model, train_loader, val_loader)
         # trainer.test(model, test_loader)
 

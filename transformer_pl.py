@@ -85,14 +85,20 @@ def _get_activation_fn(activation):
 # pytorch implmentation for torch ligthning
 # class Transformer(pl.LightningModule):
 
+# global counter
+training_tokens_processed = 0
+
 
 class DecoderOnlyTransformer(pl.LightningModule):
-    def __init__(self, config, ntokens, activation="relu"):
+    training_tokens_processed = 0
+
+    def __init__(self, config, ntokens, trainer, activation="relu"):
         super(DecoderOnlyTransformer, self).__init__()
         
         # model vars
         self.extract_config(config)
         self.ntokens = ntokens
+        self.trainer = trainer
 
         # decoder setup
         decoder_layer = CustomTransformerDecoderLayer(
@@ -109,11 +115,6 @@ class DecoderOnlyTransformer(pl.LightningModule):
 
         # training setup
         self.criterion = nn.CrossEntropyLoss()
-        if not DEBUG_ON:
-            self.wandb_run = wandb.init(config=config, entity=WANDB_ENTITY)
-
-        # logging
-        self.training_tokens_processed = 0
 
         self._reset_parameters()
 
@@ -168,24 +169,14 @@ class DecoderOnlyTransformer(pl.LightningModule):
         src_mask = self.generate_square_subsequent_mask(data.size(0))
         output = self(data, src_mask)
         output_flat = output.view(-1, self.ntokens)
-        # print("training_step:", batch_idx)
-        # logTensor(data, "data")
-        # logTensor(output, "output")
-        # logTensor(output_flat, "output_flat")
-        # logTensor(targets, "targets")
-        # print(data[0])
-        # print(targets[0:20])
         loss = self.criterion(output_flat, targets)
-        self.training_tokens_processed = self.training_tokens_processed + torch.numel(data)
+        self.updateTokenCount(torch.numel(data))
 
-        # wandb logging
-        if not DEBUG_ON:
-            wandb.log({
-                "batch": batch_idx,
-                "batch_loss": loss.item(),
-                "ppl": math.exp(loss.item()),
-                "training_tokens_processed": self.training_tokens_processed,
-            })
+        self.log('training_tokens_processed', DecoderOnlyTransformer.training_tokens_processed)
+        self.log('batch_loss', loss.item(), on_step=True, on_epoch=False)
+        self.log('avg_loss', loss.item(), on_step=False, on_epoch=True)
+        self.log('batch_ppl', math.exp(loss.item()), on_step=True, on_epoch=False)
+        self.log('avg_ppl', math.exp(loss.item()), on_step=False, on_epoch=True)
 
         return loss
 
@@ -196,9 +187,13 @@ class DecoderOnlyTransformer(pl.LightningModule):
         output_flat = output.view(-1, self.ntokens)
         loss = self.criterion(output_flat, targets)
 
-        if not DEBUG_ON:
-            wandb.log({"val_loss": loss, "val_ppl": math.exp(loss)})
+        self.log('val_avg_loss', loss.item(), on_step=False, on_epoch=True)
+        self.log('val_avg_ppl', math.exp(loss.item()), on_step=False, on_epoch=True)
+
         return loss
+
+    def updateTokenCount(self, count):
+        DecoderOnlyTransformer.training_tokens_processed += count
 
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(self.parameters(), lr=self.learning_rate, betas=(
@@ -242,6 +237,6 @@ if __name__ == "__main__":
     train_loader, val_loader, test_loader, vocab = load_data(config)
     ntokens = len(vocab.stoi)
 
-    model = DecoderOnlyTransformer(config, ntokens)
     trainer = pl.Trainer(gpus=4, accelerator="ddp")
+    model = DecoderOnlyTransformer(config, ntokens, trainer)
     trainer.fit(model, train_loader, val_loader)
