@@ -1,4 +1,8 @@
 .data
+wandb
+lightning_logs
+words2bytes/
+uncategorized/
 
 ## Boilerplate
 # Byte-compiled / optimized / DLL files

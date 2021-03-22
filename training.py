@@ -30,10 +30,17 @@ def train(model, batches, config, runtime, epoch, artifacts):
         if data.size(0) != max_seq_len:
             src_mask = model.generate_square_subsequent_mask(
                 data.size(0)).to(device)
+        print("data.shape", data.shape)
+        print("targets.shape", targets.shape)
+        print("src_mask.shape", src_mask.shape)
 
         output = model(data, src_mask)
+        print("output", output.shape)
 
-        loss = criterion(output.view(-1, ntokens), targets)
+        output_flat = output.view(-1, ntokens)
+
+        print("output_flat", output_flat.shape)
+        loss = criterion(output_flat, targets)
         loss.backward()
         torch.nn.utils.clip_grad_norm_(model.parameters(), 0.5)
         optimizer.step()
@@ -86,6 +93,7 @@ def evaluate(model, data_source, config, runtime):
             output = model(data, src_mask)
 
             output_flat = output.view(-1, ntokens)
+            print("output_flat", output_flat.shape)
             loss = criterion(output_flat, targets)
             total_loss += len(data) * loss.item()
 

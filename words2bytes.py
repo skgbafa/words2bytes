@@ -1,19 +1,13 @@
 # imports
-import time
-import math
-
-import torch
-import torch.nn as nn
-
 import wandb
 
-from constants import *
-from artifacts import initalize_artifacts, visualize_artifacts
-from utils import extract_config
+import pytorch_lightning as pl
 
-from data import load_data, batchify
+from constants import *
+from utils import *
+
+from data import load_data
 from transformer import DecoderOnlyTransformer
-from training import train, evaluate
 
 
 # default config
@@ -25,6 +19,7 @@ default_config = {
     "n_decoder_layers": 2,
     "dataset": Dataset.PennTreebank.name,
     "segmentation": Segmentation.Word.name,
+    "vocab_size": 40000, # subword/bbpe only
     "max_seq_len": 35,
     "batch_size": 20,
     "eval_batch_size": 10,
@@ -37,27 +32,44 @@ default_config = {
     "loss_criterion": "CrossEntropyLoss"
 }
 
+# benchmarked against https://arxiv.org/pdf/1904.09408v2.pdf
+# bert_lm_12_768_12_300_1150_wikitext2
+benchmark_config_1 = {
+    "embedding_dimension": 768,  # units
+    "ff_dimension": 3072,  # hidden_size
+    "n_attention_heads": 12,  # num_heads
+    "n_encoder_layers": 0,  # num_layers
+    "n_decoder_layers": 12,  # num_layers
+    "dataset": Dataset.PennTreebank.name,
+    "segmentation": Segmentation.Word.name,
+    "vocab_size": 40000,
+    "max_seq_len": 64,  # max_length
+    "dropout": 0.1,  # dropout
+    "batch_size": 8,
+    "eval_batch_size": 8,
+    "n_epochs": 3,
+    "learning_rate": 0.00003125,
+    "adam_b1": 0.9,
+    "adam_b2": 0.999,
+    "adam_l2_weightdecay": 0.01,
+    "loss_criterion": "CrossEntropyLoss"
+}
+
 # experiment generation
 def generateExperiements():
     # WANDB_ENTITY = "skgbafa"
     WANDB_ENTITY = "openai-scholars"
 
-    # experiment_datasets = [ Dataset.PennTreebank.name, Dataset.WikiText2.name, Dataset.WikiText103.name ]
-    experiment_datasets = [ Dataset.WikiText2.name ]
-    experiment_segmentation = [ Segmentation.Word.name, Segmentation.Character.name ]
+    experiment_datasets = [ Dataset.PennTreebank.name,Dataset.WikiText2.name, Dataset.WikiText103.name ]
+    # experiment_datasets = [ Dataset.WikiText2.name ]
+    experiment_segmentation = [ Segmentation.Word.name, Segmentation.Subword.name ]
 
     sweep_parameters = {
-        "n_attention_heads": {
-            "values": [2, 3]
-        },
-        "n_decoder_layers": {
-            "values": [2, 4, 6]
-        },
         "dataset": {
             "values": experiment_datasets
         },
         "n_epochs": {
-            "values": [3]
+            "values": [20]
         },
         "segmentation": {
             "values": experiment_segmentation
@@ -65,7 +77,7 @@ def generateExperiements():
     }
 
     sweep_config = {
-        "name": "Experamental Sweeps",
+        "name": "Benchmark Sweeps",
         "method": "grid",
         "parameters": sweep_parameters
     }
@@ -75,85 +87,24 @@ def generateExperiements():
     return sweep_id
 
 # sweep function
-def train_and_eval(config=default_config, entity=WANDB_ENTITY):
+def train_and_eval(config=benchmark_config_1, entity=WANDB_ENTITY, num_gpus=4):
     run = wandb.init(config=config, entity=entity)
     config = run.config
+    n_epochs = extract_config(config, "n_epochs")
 
-    # setup data
-    # extract config vars
-    embedding_dimension, n_attention_heads, n_encoder_layers, n_decoder_layers, ff_dimension, dropout, batch_size, eval_batch_size, learning_rate, n_epochs, adam_b1, adam_b2, adam_l2_weightdecay = extract_config(
-        config, "embedding_dimension", "n_attention_heads", "n_encoder_layers", "n_decoder_layers", "ff_dimension", "dropout", "batch_size", "eval_batch_size", "learning_rate", "n_epochs", "adam_b1", "adam_b2", "adam_l2_weightdecay")
+    # load data
+    train_loader, val_loader, test_loader, vocab, tokenizer = load_data(config)
+    ntokens = len(vocab)
+    
+    # logger
+    wandb_logger = pl.loggers.WandbLogger(config=config, entity=entity)
 
-    # configure device
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    # device = torch.device("cpu")
-
-    # load training data
-    train_data, val_data, test_data, vocab = load_data(config)
-    ntokens = len(vocab.stoi)
-    print("Number of tokens", ntokens)
-    # batch data
-    train_data_batches = batchify(train_data, batch_size, device)
-    val_data_batches = batchify(val_data, eval_batch_size, device)
-    test_data_batches = batchify(test_data, eval_batch_size, device)
-
-    # instantiate model
-    model = DecoderOnlyTransformer(ntokens, d_model=embedding_dimension, nhead=n_attention_heads, num_encoder_layers=n_encoder_layers,
-                                num_decoder_layers=n_decoder_layers, dim_feedforward=ff_dimension, dropout=dropout).to(device)
-
-    # hyperparams
-    criterion = nn.CrossEntropyLoss()
-    optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, betas=(
-        adam_b1, adam_b2), weight_decay=adam_l2_weightdecay)
-    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, 1.0, gamma=0.95)
-
-    # runtime vars
-    runtime = {
-        "criterion": criterion,
-        "optimizer": optimizer,
-        "scheduler": scheduler,
-        "ntokens": ntokens,
-        "device": device,
-    }
-
-    # train loop
-    best_val_loss = float("inf")
-    best_model = None
-    artifacts = initalize_artifacts(
-        config, train_data_batches, val_data_batches)
-
-    for epoch in range(1, n_epochs + 1):
-        epoch_start_time = time.time()
-
-        train(model, train_data_batches, config, runtime, epoch, artifacts)
-        val_loss = evaluate(model, val_data_batches, config, runtime)
-        wandb.log({"val_loss": val_loss, "val_ppl": math.exp(
-            val_loss), "epoch": epoch})
-        print('-' * 89)
-        print('| end of epoch {:3d} | time: {:5.2f}s | valid loss {:5.2f} | '
-            'valid ppl {:8.2f}'.format(epoch, (time.time() - epoch_start_time),
-                                        val_loss, math.exp(val_loss)))
-        print('-' * 89)
-
-        if val_loss < best_val_loss:
-            best_val_loss = val_loss
-            best_model = model
-
-        scheduler.step()
-
-    visualize_artifacts(artifacts)
-
-    # test model
-    test_loss = evaluate(best_model, test_data_batches, config, runtime)
-    wandb.log({"test_loss": test_loss, "test_ppl": math.exp(test_loss)})
-
-    print('=' * 89)
-    print('| End of training | test loss {:5.2f} | test ppl {:8.2f}'.format(
-        test_loss, math.exp(test_loss)))
-    print('=' * 89)
-
-    return best_model
-
+    # run model
+    trainer = pl.Trainer(gpus=num_gpus, accelerator="dp",
+                         max_epochs=n_epochs, logger=wandb_logger)
+    model = DecoderOnlyTransformer(config, ntokens, trainer)
+    trainer.fit(model, train_loader, val_loader)
+    trainer.test(model, test_loader)
 
 if __name__ == "__main__":
   print("Run Sweep")
