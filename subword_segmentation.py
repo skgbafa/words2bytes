@@ -1,4 +1,4 @@
-from words2bytes_pl import train_and_eval
+from words2bytes import train_and_eval
 from constants import *
 
 

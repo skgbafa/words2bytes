@@ -1,4 +1,4 @@
-from words2bytes_pl import train_and_eval
+from words2bytes import train_and_eval
 from constants import *
 
 import wandb
@@ -8,8 +8,8 @@ import pytorch_lightning as pl
 from constants import *
 from utils import *
 
-from data_pl import load_data
-from transformer_pl import DecoderOnlyTransformer
+from data import load_data
+from transformer import DecoderOnlyTransformer
 
 original_lr = 0.0000625
 
