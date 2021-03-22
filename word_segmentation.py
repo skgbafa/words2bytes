@@ -38,7 +38,6 @@ benchmark_config_1 = {
     "loss_criterion": "CrossEntropyLoss"
 }
 
-
 def train_and_eval(config=benchmark_config_1, entity=WANDB_ENTITY, num_gpus=4):
     run = wandb.init(config=config, entity=entity)
     config = run.config
@@ -71,3 +70,4 @@ sweep_config = {
 
 sweep_id = wandb.sweep(sweep_config, entity=WANDB_ENTITY)
 wandb.agent(sweep_id, function=train_and_eval)
+

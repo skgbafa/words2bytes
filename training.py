@@ -47,7 +47,6 @@ def train(model, batches, config, runtime, epoch, artifacts):
 
         wandb.log({
             "epoch": epoch,
-            "batch": batch,
             "batch_loss": loss.item(),
             "ppl": math.exp(loss.item()),
             "learning_rate": scheduler.get_lr()[0],
@@ -99,7 +98,6 @@ def evaluate(model, data_source, config, runtime):
             total_loss += len(data) * loss.item()
 
             wandb.log({
-                "batch": i,
                 "batch_loss": loss.item(),
                 "ppl": math.exp(loss.item()),
             })
