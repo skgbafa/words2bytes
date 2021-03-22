@@ -3,6 +3,7 @@ import os
 
 import torch
 import math
+import re
 
 import numpy as np
 
@@ -95,6 +96,29 @@ class TextDataloader:
         shuffled_dataset = map(
             lambda x: dataset[x * self.max_seq_len: (x + 1) * self.max_seq_len], self.seq_order)
         return torch.cat(list(shuffled_dataset))
+
+
+def split_dataset(config):
+    dataset  = extract_config(config, "dataset")
+    location = TRAINING_DATA[dataset]['location']
+    paths = list(map(lambda x: str(DATA_PATH+location+x),
+                     TRAINING_DATA[dataset]['filenames']))
+
+    # train data
+    train_data = []
+    valid_data = []
+    test_data = []
+    for path in paths:
+        raw_data = list(open(path, newline='\n'))
+        raw_data = list(filter(lambda x: x != '\n', raw_data))
+        if re.search("train", path):
+           train_data = raw_data
+        if re.search("valid", path):
+           valid_data = raw_data
+        if re.search("test", path):
+           test_data = raw_data
+
+    return train_data, valid_data, test_data
 
 # load training data
 def load_data(config):
@@ -220,8 +244,9 @@ def load_data_subword(config):
     print(f"Fetched Data ({time.time() - ts:3f}s)")
 
     # split dataset
-    train_dataset, val_dataset, test_dataset = tt_dataset.splits(
-        text_field=Field())
+    # train_dataset, val_dataset, test_dataset = tt_dataset.splits(
+    #     text_field=Field())
+    train_dataset, val_dataset, test_dataset = split_dataset(config)
     print(f"Tokenized and Split Data ({time.time() - ts:3f}s)")
 
     # tokenize
@@ -235,9 +260,8 @@ def load_data_subword(config):
 
     # prep data
     def prep_data(dataset_arr):
-        raw_text_iter = dataset_arr[0].text
         data = [torch.tensor(tokenizer.encode(item).ids,
-                             dtype=torch.long) for item in raw_text_iter]
+                             dtype=torch.long) for item in dataset_arr]
         data = torch.cat(tuple(filter(lambda t: t.numel() > 0, data)))
         return data
 
@@ -256,8 +280,8 @@ if __name__ == "__main__":
         "n_attention_heads": 2,
         "n_encoder_layers": 0,
         "n_decoder_layers": 2,
-        "dataset": Dataset.WikiText2.name,
-        "segmentation": Segmentation.Word.name,
+        "dataset": Dataset.PennTreebank.name,
+        "segmentation": Segmentation.Subword.name,
         "vocab_size": 40000,
         "max_seq_len": 32,
         "batch_size": 20,
@@ -278,6 +302,9 @@ if __name__ == "__main__":
         # print(batch)    
         data, targets = batch
         print("[train] data.shape - targets.shape: ", data.shape,  targets.shape)
+        print(tokenizer.decode(data[0].tolist()))
+        print(tokenizer.decode(targets[0:len(data[0])].tolist()))
+        break
 
     # for batch in val_dataloader:
     #     # print(batch)    

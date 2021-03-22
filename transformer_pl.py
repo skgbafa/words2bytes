@@ -115,7 +115,7 @@ class DecoderOnlyTransformer(pl.LightningModule):
 
         # training setup
         self.criterion = nn.CrossEntropyLoss()
-
+        
         self._reset_parameters()
 
     def extract_config(self, config):
@@ -160,6 +160,7 @@ class DecoderOnlyTransformer(pl.LightningModule):
         return mask
 
     def _reset_parameters(self):
+        DecoderOnlyTransformer.training_tokens_processed = 0
         for p in self.parameters():
             if p.dim() > 1:
                 nn.init.xavier_uniform_(p)
@@ -189,6 +190,18 @@ class DecoderOnlyTransformer(pl.LightningModule):
 
         self.log('val_avg_loss', loss.item(), on_step=False, on_epoch=True)
         self.log('val_avg_ppl', math.exp(loss.item()), on_step=False, on_epoch=True)
+
+        return loss
+
+    def test_step(self, batch, batch_idx):
+        data, targets = batch
+        src_mask = self.generate_square_subsequent_mask(data.size(0))
+        output = self(data, src_mask)
+        output_flat = output.view(-1, self.ntokens)
+        loss = self.criterion(output_flat, targets)
+
+        self.log('test_avg_loss', loss.item(), on_step=False, on_epoch=True)
+        self.log('test_avg_ppl', math.exp(loss.item()), on_step=False, on_epoch=True)
 
         return loss
 

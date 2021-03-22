@@ -60,24 +60,26 @@ def train_and_eval(config=benchmark_config_1, entity=WANDB_ENTITY, num_gpus=-1):
                          max_epochs=n_epochs, logger=wandb_logger)
     model = DecoderOnlyTransformer(config, ntokens, trainer)
     trainer.fit(model, train_loader, val_loader)
+    trainer.test(model, test_loader)
 
 
 # train_and_eval()
 
-# # scale = [0.7, 0.5, 0.33, 0.25, 0.1]
+# scale = [0.7, 0.5, 0.33, 0.25, 0.1]
 # scale = [0.65, 0.6, 0.55, 0.5, 0.45, 0.4, 0.375, 0.35]
 
 sweep_parameters = {
-    "dropout": {
-        "values": [0, 0.1]
-    },
+    # "dropout": {
+    #     "values": [0.1, 0]
+    # },
     "adam_l2_weightdecay": {
-        "values": [0, 0.01]
+        # "values":  [0, 0.002, 0.004, 0.006, 0.008, 0.01]
+        "values":  [0, 0.00001, 0.0001, 0.001, 0.01]
     },
 }
 
 sweep_config = {
-    "name": "Dropout - Weight Decay Sweeps",
+    "name": "Weight Decay Sweeps",
     "method": "grid",
     "parameters": sweep_parameters
 }

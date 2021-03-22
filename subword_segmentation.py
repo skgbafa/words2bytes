@@ -19,7 +19,7 @@ benchmark_config_1 = {
     "dropout": 0.1,  # dropout
     "batch_size": 12,
     "eval_batch_size": 8,
-    "n_epochs": 10,
+    "n_epochs": 3,
     # "learning_rate": 0.0000625,
     "learning_rate": original_lr * 0.55,
     "adam_b1": 0.9,

@@ -95,12 +95,16 @@ def train_and_eval(config=benchmark_config_1, entity=WANDB_ENTITY, num_gpus=4):
     # load data
     train_loader, val_loader, test_loader, vocab, tokenizer = load_data(config)
     ntokens = len(vocab)
+    
+    # logger
+    wandb_logger = pl.loggers.WandbLogger(config=config, entity=entity)
 
     # run model
-    trainer = pl.Trainer(gpus=num_gpus, accelerator="dp", max_epochs=n_epochs)
+    trainer = pl.Trainer(gpus=num_gpus, accelerator="dp",
+                         max_epochs=n_epochs, logger=wandb_logger)
     model = DecoderOnlyTransformer(config, ntokens, trainer)
     trainer.fit(model, train_loader, val_loader)
-        # trainer.test(model, test_loader)
+    trainer.test(model, test_loader)
 
 
 
