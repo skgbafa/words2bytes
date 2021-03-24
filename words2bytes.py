@@ -107,10 +107,11 @@ def train_and_eval(config=benchmark_config_1, entity=WANDB_ENTITY, num_gpus=4):
     trainer.test(model, test_loader)
 
 if __name__ == "__main__":
-  print("Run Sweep")
-  # set up experiments
-  sweep_id = generateExperiements()
+#   print("Run Sweep")
+#   # set up experiments
+#   sweep_id = generateExperiements()
 
-  # run experiments
-  wandb.agent(sweep_id, function=train_and_eval)
+#   # run experiments
+#   wandb.agent(sweep_id, function=train_and_eval)
 
+    train_and_eval()

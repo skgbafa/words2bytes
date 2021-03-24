@@ -39,6 +39,7 @@ benchmark_config_1 = {
     "adam_b1": 0.9,
     "adam_b2": 0.999,
     "adam_l2_weightdecay": 0.01,
+    "gamma": 0.95,
     "loss_criterion": "CrossEntropyLoss"
 }
 
@@ -55,9 +56,14 @@ def train_and_eval(config=benchmark_config_1, entity=WANDB_ENTITY, num_gpus=-1):
     # logger
     wandb_logger = pl.loggers.WandbLogger(config=config, entity=entity)
 
+    # checkpoints
+    checkpoint_callback = pl.callbacks.ModelCheckpoint(period=1)
+
     # run model
     trainer = pl.Trainer(gpus=num_gpus, accelerator="dp",
-                         max_epochs=n_epochs, logger=wandb_logger)
+                         max_epochs=n_epochs, logger=wandb_logger,
+                         checkpoint_callback=checkpoint_callback)
+                         
     model = DecoderOnlyTransformer(config, ntokens, trainer)
     trainer.fit(model, train_loader, val_loader)
     trainer.test(model, test_loader)
@@ -69,17 +75,14 @@ def train_and_eval(config=benchmark_config_1, entity=WANDB_ENTITY, num_gpus=-1):
 # scale = [0.65, 0.6, 0.55, 0.5, 0.45, 0.4, 0.375, 0.35]
 
 sweep_parameters = {
-    # "dropout": {
-    #     "values": [0.1, 0]
-    # },
-    "adam_l2_weightdecay": {
-        # "values":  [0, 0.002, 0.004, 0.006, 0.008, 0.01]
-        "values":  [0, 0.00001, 0.0001, 0.001, 0.01]
+    "gamma": {
+        "values":  [0.8, 0.85, 0.9, 0.95]
+
     },
 }
 
 sweep_config = {
-    "name": "Weight Decay Sweeps",
+    "name": "Gamma Sweeps",
     "method": "grid",
     "parameters": sweep_parameters
 }
