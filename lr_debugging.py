@@ -26,11 +26,11 @@ benchmark_config_1 = {
     "segmentation": Segmentation.Subword.name,
     "vocab_size": 40000,
     "max_seq_len": 64,  # max_length
-    "dropout": 0.1,  # dropout
+    "dropout": 0,  # dropout
     # "batch_size": 16,
     "batch_size": 12,
     "eval_batch_size": 8,
-    "n_epochs": 10,
+    "n_epochs": 37,
     # "learning_rate": 0.0000625,
     # "learning_rate": 0.00003125,
     # "learning_rate": 0.000015625,
@@ -38,9 +38,11 @@ benchmark_config_1 = {
     "learning_rate": original_lr * 0.55,
     "adam_b1": 0.9,
     "adam_b2": 0.999,
-    "adam_l2_weightdecay": 0.01,
+    "adam_l2_weightdecay": 0,
     "gamma": 0.95,
-    "loss_criterion": "CrossEntropyLoss"
+    "loss_criterion": "CrossEntropyLoss",
+    "enable_lr_scheduler": True,
+    "T_max": 5,
 }
 
 
@@ -76,13 +78,12 @@ def train_and_eval(config=benchmark_config_1, entity=WANDB_ENTITY, num_gpus=-1):
 
 sweep_parameters = {
     "gamma": {
-        "values":  [0.8, 0.85, 0.9, 0.95]
-
+        "values":  [0.9, 0.8]
     },
 }
 
 sweep_config = {
-    "name": "Gamma Sweeps",
+    "name": "Gamma Sweeps 50k",
     "method": "grid",
     "parameters": sweep_parameters
 }

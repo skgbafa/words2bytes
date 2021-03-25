@@ -119,8 +119,8 @@ class DecoderOnlyTransformer(pl.LightningModule):
         self._reset_parameters()
 
     def extract_config(self, config):
-        embedding_dimension, n_attention_heads, n_decoder_layers, ff_dimension, dropout, learning_rate, adam_b1, adam_b2, adam_l2_weightdecay, gamma = extract_config(
-            config, "embedding_dimension", "n_attention_heads", "n_decoder_layers", "ff_dimension", "dropout", "learning_rate", "adam_b1", "adam_b2", "adam_l2_weightdecay", "gamma")
+        embedding_dimension, n_attention_heads, n_decoder_layers, ff_dimension, dropout, learning_rate, adam_b1, adam_b2, adam_l2_weightdecay, gamma, enable_lr_scheduler, T_max = extract_config(
+            config, "embedding_dimension", "n_attention_heads", "n_decoder_layers", "ff_dimension", "dropout", "learning_rate", "adam_b1", "adam_b2", "adam_l2_weightdecay", "gamma", "enable_lr_scheduler", "T_max")
 
         self.d_model = embedding_dimension
         self.n_heads = n_attention_heads
@@ -132,6 +132,8 @@ class DecoderOnlyTransformer(pl.LightningModule):
         self.adam_b2 = adam_b2
         self.gamma = gamma
         self.adam_l2_weightdecay = adam_l2_weightdecay
+        self.enable_lr_scheduler = enable_lr_scheduler
+        self.T_max = T_max
 
     def forward(self, tgt, tgt_mask=None, tgt_key_padding_mask=None):
 
@@ -179,6 +181,7 @@ class DecoderOnlyTransformer(pl.LightningModule):
         self.log('avg_loss', loss.item(), on_step=False, on_epoch=True)
         self.log('batch_ppl', math.exp(loss.item()), on_step=True, on_epoch=False)
         self.log('avg_ppl', math.exp(loss.item()), on_step=False, on_epoch=True)
+        self.log('learning_rate', self.scheduler.get_last_lr()[0], on_step=True, on_epoch=False)
 
         return loss
 
@@ -212,7 +215,9 @@ class DecoderOnlyTransformer(pl.LightningModule):
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(self.parameters(), lr=self.learning_rate, betas=(
             self.adam_b1, self.adam_b2), weight_decay=self.adam_l2_weightdecay)
-        scheduler = torch.optim.lr_scheduler.StepLR(optimizer, 2700, gamma=self.gamma)
+        scheduler = torch.optim.lr_scheduler.StepLR(optimizer, 1360, gamma=self.gamma)
+        # scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=self.T_max)
+        self.scheduler = scheduler
 
         return [optimizer], [scheduler]
 

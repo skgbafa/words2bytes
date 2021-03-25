@@ -244,9 +244,9 @@ def load_data_subword(config):
     print(f"Fetched Data ({time.time() - ts:3f}s)")
 
     # split dataset
-    # train_dataset, val_dataset, test_dataset = tt_dataset.splits(
-    #     text_field=Field())
-    train_dataset, val_dataset, test_dataset = split_dataset(config)
+    train_dataset, val_dataset, test_dataset = tt_dataset.splits(
+        text_field=Field())
+    # train_dataset, val_dataset, test_dataset = split_dataset(config)
     print(f"Tokenized and Split Data ({time.time() - ts:3f}s)")
 
     # tokenize
@@ -260,8 +260,10 @@ def load_data_subword(config):
 
     # prep data
     def prep_data(dataset_arr):
+        # raw_text_iter = dataset_arr
+        raw_text_iter = dataset_arr[0].text
         data = [torch.tensor(tokenizer.encode(item).ids,
-                             dtype=torch.long) for item in dataset_arr]
+                             dtype=torch.long) for item in raw_text_iter]
         data = torch.cat(tuple(filter(lambda t: t.numel() > 0, data)))
         return data
 
