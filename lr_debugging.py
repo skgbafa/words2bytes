@@ -57,14 +57,16 @@ def train_and_eval(config=benchmark_config_1, entity=WANDB_ENTITY, num_gpus=-1):
 
     # logger
     wandb_logger = pl.loggers.WandbLogger(config=config, entity=entity)
-
+    lr_monitor = pl.callbacks.LearningRateMonitor(logging_interval='step')
+    
     # checkpoints
     checkpoint_callback = pl.callbacks.ModelCheckpoint(period=1)
 
     # run model
     trainer = pl.Trainer(gpus=num_gpus, accelerator="dp",
                          max_epochs=n_epochs, logger=wandb_logger,
-                         checkpoint_callback=checkpoint_callback)
+                        #  checkpoint_callback=checkpoint_callback,
+                         callbacks=[lr_monitor, checkpoint_callback])
                          
     model = DecoderOnlyTransformer(config, ntokens, trainer)
     trainer.fit(model, train_loader, val_loader)
@@ -78,7 +80,7 @@ def train_and_eval(config=benchmark_config_1, entity=WANDB_ENTITY, num_gpus=-1):
 
 sweep_parameters = {
     "gamma": {
-        "values":  [0.9, 0.8]
+        "values":  [0.8, 0.9]
     },
 }
 

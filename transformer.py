@@ -92,7 +92,7 @@ training_tokens_processed = 0
 class DecoderOnlyTransformer(pl.LightningModule):
     training_tokens_processed = 0
 
-    def __init__(self, config, ntokens, trainer, activation="relu"):
+    def __init__(self, config, ntokens, trainer=None, activation="relu"):
         super(DecoderOnlyTransformer, self).__init__()
         
         # model vars
@@ -181,7 +181,7 @@ class DecoderOnlyTransformer(pl.LightningModule):
         self.log('avg_loss', loss.item(), on_step=False, on_epoch=True)
         self.log('batch_ppl', math.exp(loss.item()), on_step=True, on_epoch=False)
         self.log('avg_ppl', math.exp(loss.item()), on_step=False, on_epoch=True)
-        self.log('learning_rate', self.scheduler.get_last_lr()[0], on_step=True, on_epoch=False)
+        # self.log('learning_rate', self.scheduler.get_last_lr()[0], on_step=True, on_epoch=False)
 
         return loss
 
@@ -215,11 +215,12 @@ class DecoderOnlyTransformer(pl.LightningModule):
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(self.parameters(), lr=self.learning_rate, betas=(
             self.adam_b1, self.adam_b2), weight_decay=self.adam_l2_weightdecay)
-        scheduler = torch.optim.lr_scheduler.StepLR(optimizer, 1360, gamma=self.gamma)
+        scheduler = torch.optim.lr_scheduler.StepLR(optimizer, 10000, gamma=self.gamma)
         # scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=self.T_max)
-        self.scheduler = scheduler
-
-        return [optimizer], [scheduler]
+        # self.scheduler = scheduler
+        return {'optimizer': optimizer, 'lr_scheduler': scheduler,
+        'name': 'learning_rate'},
+        # return [optimizer], [scheduler]
 
 def logTensor(tensor, note: None):
     try:
