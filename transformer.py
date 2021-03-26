@@ -215,12 +215,18 @@ class DecoderOnlyTransformer(pl.LightningModule):
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(self.parameters(), lr=self.learning_rate, betas=(
             self.adam_b1, self.adam_b2), weight_decay=self.adam_l2_weightdecay)
-        scheduler = torch.optim.lr_scheduler.StepLR(optimizer, 10000, gamma=self.gamma)
-        # scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=self.T_max)
-        # self.scheduler = scheduler
-        return {'optimizer': optimizer, 'lr_scheduler': scheduler,
-        'name': 'learning_rate'},
-        # return [optimizer], [scheduler]
+
+        scheduler = {
+            'scheduler': torch.optim.lr_scheduler.StepLR(optimizer, 10000, gamma=self.gamma),
+            'name': 'lr_scheduler',
+            'interval': 'step',
+            'frequency': 1,
+        }
+
+        return {
+            'optimizer': optimizer,
+            'lr_scheduler': scheduler,
+        },
 
 def logTensor(tensor, note: None):
     try:
