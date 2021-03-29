@@ -39,7 +39,7 @@ benchmark_config_1 = {
     "adam_b1": 0.9,
     "adam_b2": 0.999,
     "adam_l2_weightdecay": 0,
-    "gamma": 0.95,
+    "gamma": 0.8,
     "loss_criterion": "CrossEntropyLoss",
     "enable_lr_scheduler": True,
     "T_max": 5,
@@ -79,8 +79,8 @@ def train_and_eval(config=benchmark_config_1, entity=WANDB_ENTITY, num_gpus=-1):
 # scale = [0.65, 0.6, 0.55, 0.5, 0.45, 0.4, 0.375, 0.35]
 
 sweep_parameters = {
-    "gamma": {
-        "values":  [0.8, 0.9]
+    "dropout": {
+        "values":  [0.5, 0.7, 0.9]
     },
 }
 

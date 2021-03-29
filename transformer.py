@@ -217,7 +217,7 @@ class DecoderOnlyTransformer(pl.LightningModule):
             self.adam_b1, self.adam_b2), weight_decay=self.adam_l2_weightdecay)
 
         scheduler = {
-            'scheduler': torch.optim.lr_scheduler.StepLR(optimizer, 10000, gamma=self.gamma),
+            'scheduler': torch.optim.lr_scheduler.StepLR(optimizer, 5000, gamma=self.gamma),
             'name': 'lr_scheduler',
             'interval': 'step',
             'frequency': 1,
