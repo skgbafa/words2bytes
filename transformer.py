@@ -178,8 +178,8 @@ class DecoderOnlyTransformer(pl.LightningModule):
 
         self.log('training_tokens_processed', DecoderOnlyTransformer.training_tokens_processed)
         self.log('batch_loss', loss.item(), on_step=True, on_epoch=False)
-        self.log('avg_loss', loss.item(), on_step=False, on_epoch=True)
         self.log('batch_ppl', math.exp(loss.item()), on_step=True, on_epoch=False)
+        self.log('avg_loss', loss.item(), on_step=False, on_epoch=True)
         self.log('avg_ppl', math.exp(loss.item()), on_step=False, on_epoch=True)
         # self.log('learning_rate', self.scheduler.get_last_lr()[0], on_step=True, on_epoch=False)
 

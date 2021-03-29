@@ -85,7 +85,7 @@ sweep_parameters = {
 }
 
 sweep_config = {
-    "name": "Gamma Sweeps 50k",
+    "name": "Dropout Sweep",
     "method": "grid",
     "parameters": sweep_parameters
 }
