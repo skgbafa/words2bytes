@@ -1,0 +1,3 @@
+[submodule "madgrad"]
+	path = madgrad
+	url = https://github.com/facebookresearch/madgrad

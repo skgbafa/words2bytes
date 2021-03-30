@@ -15,6 +15,7 @@ import pytorch_lightning as pl
 from utils import extract_config
 from constants import *
 
+from madgrad import madgrad
 
 class PositionalEncoding(nn.Module):
     def __init__(self, d_model, dropout=0.1, max_len=5000):
@@ -213,8 +214,10 @@ class DecoderOnlyTransformer(pl.LightningModule):
         DecoderOnlyTransformer.training_tokens_processed += count
 
     def configure_optimizers(self):
-        optimizer = torch.optim.Adam(self.parameters(), lr=self.learning_rate, betas=(
-            self.adam_b1, self.adam_b2), weight_decay=self.adam_l2_weightdecay)
+        # optimizer = torch.optim.Adam(self.parameters(), lr=self.learning_rate, betas=(
+        #     self.adam_b1, self.adam_b2), weight_decay=self.adam_l2_weightdecay)
+
+        optimizer = madgrad(self.parameters(), lr=self.learning_rate, weight_decay=self.adam_l2_weightdecay)
 
         scheduler = {
             'scheduler': torch.optim.lr_scheduler.StepLR(optimizer, 5000, gamma=self.gamma),
