@@ -26,11 +26,11 @@ benchmark_config_1 = {
     "segmentation": Segmentation.Subword.name,
     "vocab_size": 40000,
     "max_seq_len": 64,  # max_length
-    "dropout": 0,  # dropout
+    "dropout": 0.05,  # dropout
     # "batch_size": 16,
     "batch_size": 12,
     "eval_batch_size": 8,
-    "n_epochs": 37,
+    "n_epochs": 15,
     # "learning_rate": 0.0000625,
     # "learning_rate": 0.00003125,
     # "learning_rate": 0.000015625,
@@ -75,17 +75,17 @@ def train_and_eval(config=benchmark_config_1, entity=WANDB_ENTITY, num_gpus=-1):
 
 # train_and_eval()
 
-# scale = [0.7, 0.5, 0.33, 0.25, 0.1]
+scale = [0.7, 0.5, 0.33, 0.25, 0.1]
 # scale = [0.65, 0.6, 0.55, 0.5, 0.45, 0.4, 0.375, 0.35]
 
 sweep_parameters = {
-    "dropout": {
-        "values":  [0.5, 0.7, 0.9]
+    "learning_rate": {
+        "values":  np.multiply(original_lr,scale)
     },
 }
 
 sweep_config = {
-    "name": "Dropout Sweep",
+    "name": "MADGRAD LR Sweep",
     "method": "grid",
     "parameters": sweep_parameters
 }
