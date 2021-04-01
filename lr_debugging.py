@@ -80,7 +80,7 @@ scale = [0.7, 0.5, 0.33, 0.25, 0.1]
 
 sweep_parameters = {
     "learning_rate": {
-        "values":  np.multiply(original_lr,scale)
+        "values":  np.multiply(original_lr, scale)
     },
 }
 
