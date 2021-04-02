@@ -8,9 +8,9 @@ bash ./Miniconda3-latest-Linux-x86_64.sh
 
 # create conda environment (sandbox)
 conda update -n base -c defaults conda
-conda create -n sandbox python=3
-conda install pytorch torchvision cudatoolkit jupyterlab numpy matplotlib torchaudio -c pytorch -y
-conda activate sandbox
+# conda create -n sandbox python=3
+# conda install pytorch torchvision cudatoolkit jupyterlab numpy matplotlib torchaudio -c pytorch -y
+# conda activate sandbox
 
 # check if GPUs accisble to pytorch
 python -c 'import torch; print(torch.cuda.get_device_name(0)) if torch.cuda.is_available() else print("cuda is not available")'
