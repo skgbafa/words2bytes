@@ -1,0 +1,1 @@
+pip install tokenizers==0.9.4 pytorch_lightning==1.1.3
