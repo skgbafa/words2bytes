@@ -17,7 +17,6 @@ original_lr = 0.0000625
 # bert_lm_12_768_12_300_1150_wikitext2
 benchmark_config_1 = {
     "embedding_dimension": 768,  # units
-    # "ff_dimension": 3072,  # hidden_size
     "ff_dimension": 768,  # hidden_size
     "n_attention_heads": 12,  # num_heads
     "n_encoder_layers": 0,  # num_layers
@@ -27,14 +26,9 @@ benchmark_config_1 = {
     "vocab_size": 40000,
     "max_seq_len": 64,  # max_length
     "dropout": 0,  # dropout
-    # "batch_size": 16,
     "batch_size": 12,
     "eval_batch_size": 8,
-    "n_epochs": 37,
-    # "learning_rate": 0.0000625,
-    # "learning_rate": 0.00003125,
-    # "learning_rate": 0.000015625,
-    # "learning_rate": 0.00000625,
+    "n_epochs": 75,
     "learning_rate": original_lr * 0.55,
     "adam_b1": 0.9,
     "adam_b2": 0.999,
@@ -43,6 +37,8 @@ benchmark_config_1 = {
     "loss_criterion": "CrossEntropyLoss",
     "enable_lr_scheduler": True,
     "T_max": 5,
+    "torchtext_split": False,
+
 }
 
 
@@ -79,13 +75,13 @@ def train_and_eval(config=benchmark_config_1, entity=WANDB_ENTITY, num_gpus=-1):
 # scale = [0.65, 0.6, 0.55, 0.5, 0.45, 0.4, 0.375, 0.35]
 
 sweep_parameters = {
-    "adam_l2_weightdecay": {
-        "values":  [0.0001, 0.001]
+    "segmentation": {
+        "values":  [Segmentation.Subword.name]
     },
 }
 
 sweep_config = {
-    "name": "Dropout Sweep",
+    "name": "Subword Run",
     "method": "grid",
     "parameters": sweep_parameters
 }
