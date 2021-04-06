@@ -225,7 +225,7 @@ class DecoderOnlyTransformer(pl.LightningModule):
 
         return {
             'optimizer': optimizer,
-            'lr_scheduler': scheduler,
+            # 'lr_scheduler': scheduler,
         },
 
 def logTensor(tensor, note: None):
