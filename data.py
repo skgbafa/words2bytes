@@ -4,6 +4,7 @@ import os
 import torch
 import math
 import re
+import string
 
 import numpy as np
 
@@ -130,8 +131,8 @@ def load_data(config):
         return load_data_general(config)
     if segmentation == Segmentation.BBPE.name:
         return load_data_general(config)
-    # if segmentation == Segmentation.Character.name:
-    #     return load_data_character(config)
+    if segmentation == Segmentation.Character.name:
+        return load_data_general(config)
     else:
         raise ValueError(f'Segementation {segmentation} not supported.')
 
@@ -252,6 +253,34 @@ def create_word_tokenizer(config):
 
     return tokenizer
 
+class CharacterTokenizer:
+    def __init__(self):
+        self.vocab = {}
+        for x in str.encode(string.printable):
+            self.vocab[x + 2] = chr(x)
+
+    def encode(self, str, is_pretokenized=True):
+        if is_pretokenized:
+            str = " ".join(str)
+        tokens = [chr(x) for x in str.encode(str)]
+        ids = [x + 2 for x in str.encode(str)]
+        
+        # sad hack
+        class Object(object):
+            pass
+        data = Object()
+
+        data.tokens = tokens
+        data.ids = ids
+
+        return data
+
+    def decode(self, tokens):
+        return "".join([chr(x - 2) if x > 1 else "" for x in tokens])
+
+    def get_vocab(self):
+        return self.vocab
+
 # load data using huggingface tokenization
 # (word, subword, bbpe)
 def load_data_general(config):
@@ -278,6 +307,8 @@ def load_data_general(config):
         tokenizer = create_bbpe_tokenizer(config)
     elif segmentation == Segmentation.Word.name:
         tokenizer = create_word_tokenizer(config)
+    elif segmentation == Segmentation.Character.name:
+        tokenizer = CharacterTokenizer()
 
     # get vocabulary
     vocab = tokenizer.get_vocab()
