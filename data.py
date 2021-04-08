@@ -109,15 +109,19 @@ def split_dataset(config):
     train_data = []
     valid_data = []
     test_data = []
-    for path in paths:
-        raw_data = list(open(path, newline='\n'))
-        raw_data = list(filter(lambda x: x != '\n', raw_data))
-        if re.search("train", path):
-           train_data = raw_data
-        if re.search("valid", path):
-           valid_data = raw_data
-        if re.search("test", path):
-           test_data = raw_data
+    
+    try:
+        for path in paths:
+            raw_data = list(open(path, newline='\n'))
+            raw_data = list(filter(lambda x: x != '\n', raw_data))
+            if re.search("train", path):
+                train_data = raw_data
+            if re.search("valid", path):
+                valid_data = raw_data
+            if re.search("test", path):
+                test_data = raw_data
+    except Exception as e:
+        print(e)
 
     return train_data, valid_data, test_data
 
@@ -341,7 +345,7 @@ if __name__ == "__main__":
         "n_attention_heads": 2,
         "n_encoder_layers": 0,
         "n_decoder_layers": 2,
-        "dataset": Dataset.PennTreebank.name,
+        "dataset": Dataset.WikiText2.name,
         "segmentation": Segmentation.Subword.name,
         "vocab_size": 40000,
         "max_seq_len": 32,
